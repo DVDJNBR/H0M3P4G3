@@ -118,3 +118,9 @@ _bmad/custom/config.user.toml
 _bmad/
 CLAUDE.md
 README.md
+
+# Node
+node_modules/
+
+# Local data volume (server DATA_DIR default)
+data/

@@ -1,0 +1,12 @@
+{
+  "name": "@h0m3p4g3/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./schema": "./schema.ts"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
+  }
+}
