@@ -8,8 +8,10 @@
     "build": "tsc --noEmit"
   },
   "dependencies": {
+    "@h0m3p4g3/shared": "*",
     "@hono/node-server": "^2.0.12",
-    "hono": "^4.13.0"
+    "hono": "^4.13.0",
+    "nanoid": "^5.1.0"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

@@ -2,13 +2,21 @@ import { pathToFileURL } from 'node:url';
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { loadConfig, type Config } from './config';
+import { createLayoutRoutes } from './layout/routes';
+import { initLayoutStore, type LayoutStore } from './storage/layout-store';
+
+export interface AppDeps {
+  layoutStore: LayoutStore;
+}
 
 // AD-7: JSON under /api/*, camelCase keys, error envelope
 // { "error": { "code", "message" } } with proper HTTP status.
-export function createApp(): Hono {
+export function createApp(deps: AppDeps): Hono {
   const app = new Hono();
 
   app.get('/api/health', (c) => c.json({ status: 'ok' }));
+
+  app.route('/', createLayoutRoutes(deps.layoutStore));
 
   app.notFound((c) =>
     c.json(
@@ -38,7 +46,7 @@ export function createApp(): Hono {
   return app;
 }
 
-function main(): void {
+async function main(): Promise<void> {
   let config: Config;
   try {
     config = loadConfig();
@@ -47,7 +55,8 @@ function main(): void {
     process.exit(1);
   }
 
-  const app = createApp();
+  const layoutStore = await initLayoutStore(config.dataDir);
+  const app = createApp({ layoutStore });
   serve({ fetch: app.fetch, port: config.port }, (info) => {
     console.log(`[server] listening on http://localhost:${info.port}`);
   });
@@ -55,5 +64,8 @@ function main(): void {
 
 // Boot only when run directly (tsx/node), not when imported by tests.
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  main();
+  main().catch((err) => {
+    console.error(`[server] fatal boot error:`, err);
+    process.exit(1);
+  });
 }
