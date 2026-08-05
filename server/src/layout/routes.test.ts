@@ -3,10 +3,20 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { layoutSchema } from '@h0m3p4g3/shared/schema';
-import { createApp } from '../index';
+import { authCookieHeader } from '../auth/test-helpers';
+import { createApp, type AppDeps } from '../index';
 import { initLayoutStore } from '../storage/layout-store';
 
 let dataDir: string;
+
+// /api/layout sits behind the session wall (FR-9) — every request in this
+// file needs a valid session cookie to reach the handler under test.
+const authConfig: AppDeps['authConfig'] = {
+  passwordHash: 'unused-in-these-tests',
+  totpSecret: 'unused-in-these-tests',
+  sessionSecret: 'layout-routes-test-session-secret',
+};
+const authHeaders = { Cookie: authCookieHeader(authConfig.sessionSecret) };
 
 beforeEach(async () => {
   dataDir = await mkdtemp(join(tmpdir(), 'h0m3p4g3-routes-'));
@@ -20,9 +30,9 @@ afterEach(async () => {
 describe('GET /api/layout', () => {
   it('returns the seeded document as schema-valid JSON on fresh boot', async () => {
     const layoutStore = await initLayoutStore(dataDir);
-    const app = createApp({ layoutStore });
+    const app = createApp({ layoutStore, authConfig });
 
-    const res = await app.request('/api/layout');
+    const res = await app.request('/api/layout', { headers: authHeaders });
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toContain('application/json');
 
@@ -53,19 +63,21 @@ describe('GET /api/layout', () => {
 
     // Simulate a restart: fresh store + fresh app over the same data dir.
     const layoutStore = await initLayoutStore(dataDir);
-    const res = await createApp({ layoutStore }).request('/api/layout');
+    const res = await createApp({ layoutStore, authConfig }).request('/api/layout', {
+      headers: authHeaders,
+    });
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual(doc);
   });
 
   it('maps invalid JSON to a 500 storageError envelope, logs [storage], stays alive', async () => {
     const layoutStore = await initLayoutStore(dataDir);
-    const app = createApp({ layoutStore });
+    const app = createApp({ layoutStore, authConfig });
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     await writeFile(join(dataDir, 'layout.json'), '{"columns": broken', 'utf8');
 
-    const res = await app.request('/api/layout');
+    const res = await app.request('/api/layout', { headers: authHeaders });
     expect(res.status).toBe(500);
     expect(await res.json()).toEqual({
       error: {
@@ -77,15 +89,15 @@ describe('GET /api/layout', () => {
     expect(String(errorSpy.mock.calls[0]?.[0])).toContain('[storage]');
 
     // Process stays alive: subsequent requests still get responses.
-    const again = await app.request('/api/layout');
+    const again = await app.request('/api/layout', { headers: authHeaders });
     expect(again.status).toBe(500);
-    const health = await app.request('/api/health');
+    const health = await app.request('/api/health', { headers: authHeaders });
     expect(health.status).toBe(200);
   });
 
   it('maps valid-JSON-but-schema-invalid content to a 500 storageError envelope, logs [storage], stays alive', async () => {
     const layoutStore = await initLayoutStore(dataDir);
-    const app = createApp({ layoutStore });
+    const app = createApp({ layoutStore, authConfig });
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     // Valid JSON, but a Block with an unrecognized `kind` — fails the
@@ -104,7 +116,7 @@ describe('GET /api/layout', () => {
       'utf8',
     );
 
-    const res = await app.request('/api/layout');
+    const res = await app.request('/api/layout', { headers: authHeaders });
     expect(res.status).toBe(500);
     expect(await res.json()).toEqual({
       error: {
@@ -116,9 +128,24 @@ describe('GET /api/layout', () => {
     expect(String(errorSpy.mock.calls[0]?.[0])).toContain('[storage]');
 
     // Process stays alive: subsequent requests still get responses.
-    const again = await app.request('/api/layout');
+    const again = await app.request('/api/layout', { headers: authHeaders });
     expect(again.status).toBe(500);
-    const health = await app.request('/api/health');
+    const health = await app.request('/api/health', { headers: authHeaders });
     expect(health.status).toBe(200);
+  });
+
+  it('returns 401 AD-7 envelope without a session — no cookie set, no data leaked', async () => {
+    const layoutStore = await initLayoutStore(dataDir);
+    const app = createApp({ layoutStore, authConfig });
+
+    const res = await app.request('/api/layout');
+    expect(res.status).toBe(401);
+    expect(res.headers.get('set-cookie')).toBeNull();
+    expect(await res.json()).toEqual({
+      error: {
+        code: 'unauthorized',
+        message: 'Authentication required',
+      },
+    });
   });
 });

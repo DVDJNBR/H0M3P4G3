@@ -10,8 +10,10 @@
   "dependencies": {
     "@h0m3p4g3/shared": "*",
     "@hono/node-server": "^2.0.12",
+    "bcryptjs": "^3.0.2",
     "hono": "^4.13.0",
-    "nanoid": "^5.1.0"
+    "nanoid": "^5.1.0",
+    "otplib": "^13.4.1"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
