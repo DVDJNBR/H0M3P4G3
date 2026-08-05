@@ -1,0 +1,107 @@
+import React, { useState } from 'react';
+import { login, ApiError } from '../api/client';
+import { useLayout } from '../context/LayoutContext';
+
+export const LoginScreen: React.FC = () => {
+  const { markAuthenticated } = useLayout();
+  const [password, setPassword] = useState('');
+  const [totp, setTotp] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!password || !totp) {
+      setError('Please enter both password and authenticator code.');
+      return;
+    }
+
+    setError(null);
+    setIsSubmitting(true);
+
+    try {
+      await login(password, totp);
+      markAuthenticated();
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.status === 429) {
+          setError('Too many failed attempts. Please wait 60 seconds.');
+        } else if (err.status === 401) {
+          setError('Invalid password or authenticator code.');
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError('An unexpected error occurred.');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-zinc-950 p-4">
+      <div className="w-full max-w-md glass-panel rounded-2xl p-8 shadow-2xl border border-zinc-800">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-400 mb-4 border border-indigo-500/20">
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-100">H0M3P4G3</h1>
+          <p className="text-sm text-zinc-400 mt-1">Authentification requise</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {error && (
+            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
+              <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{error}</span>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-medium text-zinc-300 uppercase tracking-wider mb-2">
+              Mot de passe
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              className="w-full px-4 py-2.5 rounded-lg bg-zinc-900/80 border border-zinc-800 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm transition-all"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-zinc-300 uppercase tracking-wider mb-2">
+              Code TOTP (Authenticator)
+            </label>
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={6}
+              value={totp}
+              onChange={(e) => setTotp(e.target.value)}
+              placeholder="123456"
+              className="w-full px-4 py-2.5 rounded-lg bg-zinc-900/80 border border-zinc-800 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm font-mono tracking-widest transition-all"
+              required
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full py-2.5 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-zinc-950 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-600/20"
+          >
+            {isSubmitting ? 'Vérification...' : 'Se connecter'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};

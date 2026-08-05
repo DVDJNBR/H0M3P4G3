@@ -1,0 +1,104 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { fetchLayout, login, ApiError } from './client';
+
+describe('API Client', () => {
+  const originalFetch = globalThis.fetch;
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  describe('fetchLayout', () => {
+    it('returns layout data on 200 OK', async () => {
+      const mockLayout = {
+        columns: [
+          {
+            id: 'col-1',
+            title: 'Main',
+            blocks: [
+              {
+                kind: 'links',
+                id: 'b-1',
+                title: 'Tech',
+                links: [{ id: 'l-1', title: 'GitHub', url: 'https://github.com' }],
+              },
+            ],
+          },
+        ],
+      };
+
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => mockLayout,
+      } as unknown as Response);
+
+      const result = await fetchLayout();
+      expect(result).toEqual(mockLayout);
+      expect(globalThis.fetch).toHaveBeenCalledWith('/api/layout', {
+        headers: { Accept: 'application/json' },
+      });
+    });
+
+    it('throws ApiError with status and envelope code on failure', async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        json: async () => ({ error: { code: 'unauthorized', message: 'Session invalid' } }),
+      } as unknown as Response);
+
+      await expect(fetchLayout()).rejects.toThrow(ApiError);
+      try {
+        await fetchLayout();
+      } catch (err) {
+        expect(err).toBeInstanceOf(ApiError);
+        const apiErr = err as ApiError;
+        expect(apiErr.status).toBe(401);
+        expect(apiErr.code).toBe('unauthorized');
+        expect(apiErr.message).toBe('Session invalid');
+      }
+    });
+  });
+
+  describe('login', () => {
+    it('succeeds on 200 OK', async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ success: true }),
+      } as unknown as Response);
+
+      await expect(login('password123', '123456')).resolves.toBeUndefined();
+      expect(globalThis.fetch).toHaveBeenCalledWith('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({ password: 'password123', totp: '123456' }),
+      });
+    });
+
+    it('throws ApiError on 401 unauth', async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        json: async () => ({ error: { code: 'invalidCredentials', message: 'Wrong password' } }),
+      } as unknown as Response);
+
+      await expect(login('wrong', '123456')).rejects.toThrow(ApiError);
+    });
+
+    it('throws ApiError on 429 rate limit', async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 429,
+        json: async () => ({ error: { code: 'rateLimited', message: 'Too many attempts' } }),
+      } as unknown as Response);
+
+      await expect(login('pass', '123456')).rejects.toThrow(ApiError);
+    });
+  });
+});

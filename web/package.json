@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@h0m3p4g3/shared": "*",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

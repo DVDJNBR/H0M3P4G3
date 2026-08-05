@@ -3,7 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "main": "./schema.ts",
   "exports": {
+    ".": "./schema.ts",
     "./schema": "./schema.ts"
   },
   "dependencies": {
