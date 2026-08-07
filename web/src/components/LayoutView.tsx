@@ -1,11 +1,110 @@
 import React from 'react';
-import type { Column } from '../types';
+import {
+  DndContext,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import { sortableKeyboardCoordinates, arrayMove } from '@dnd-kit/sortable';
+import type { Column, Layout, Block } from '../types';
 import { useLayout } from '../context/LayoutContext';
 import { ColumnView } from './ColumnView';
 import { Header } from './Header';
 
 export const LayoutView: React.FC = () => {
-  const { layout, isLoading, error, loadLayout } = useLayout();
+  const { layout, isLoading, error, loadLayout, isEditorMode, saveLayout } = useLayout();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || !layout) return;
+
+    const activeId = String(active.id);
+    const overId = String(over.id);
+
+    // Find active block & its source column
+    let sourceColIndex = -1;
+    let activeBlockIndex = -1;
+    let activeBlock: Block | null = null;
+
+    layout.columns.forEach((col, colIdx) => {
+      const bIdx = col.blocks.findIndex((b) => b.id === activeId);
+      if (bIdx !== -1) {
+        sourceColIndex = colIdx;
+        activeBlockIndex = bIdx;
+        activeBlock = col.blocks[bIdx]!;
+      }
+    });
+
+    if (sourceColIndex === -1 || !activeBlock) return;
+
+    // Find target column
+    let targetColIndex = -1;
+    let targetBlockIndex = -1;
+
+    // Check if over target is a column ID directly
+    const directColIdx = layout.columns.findIndex((c) => c.id === overId);
+    if (directColIdx !== -1) {
+      targetColIndex = directColIdx;
+      targetBlockIndex = layout.columns[targetColIndex]!.blocks.length;
+    } else {
+      // Over target is a block ID inside some column
+      layout.columns.forEach((col, colIdx) => {
+        const bIdx = col.blocks.findIndex((b) => b.id === overId);
+        if (bIdx !== -1) {
+          targetColIndex = colIdx;
+          targetBlockIndex = bIdx;
+        }
+      });
+    }
+
+    if (targetColIndex === -1) return;
+
+    // Clone columns array
+    const newColumns: Column[] = layout.columns.map((c) => ({
+      ...c,
+      blocks: [...c.blocks],
+    }));
+
+    if (sourceColIndex === targetColIndex) {
+      // Reordering within the same column
+      if (activeBlockIndex !== targetBlockIndex && targetBlockIndex !== -1) {
+        newColumns[sourceColIndex]!.blocks = arrayMove(
+          newColumns[sourceColIndex]!.blocks,
+          activeBlockIndex,
+          targetBlockIndex,
+        );
+      }
+    } else {
+      // Moving block between columns
+      const [movedBlock] = newColumns[sourceColIndex]!.blocks.splice(activeBlockIndex, 1);
+      if (movedBlock) {
+        if (targetBlockIndex >= 0) {
+          newColumns[targetColIndex]!.blocks.splice(targetBlockIndex, 0, movedBlock);
+        } else {
+          newColumns[targetColIndex]!.blocks.push(movedBlock);
+        }
+      }
+    }
+
+    const updatedLayout: Layout = {
+      columns: newColumns,
+    };
+
+    saveLayout(updatedLayout);
+  };
 
   if (isLoading) {
     return (
@@ -55,12 +154,14 @@ export const LayoutView: React.FC = () => {
     <div className="min-h-screen bg-zinc-950 pb-16">
       <Header />
       <main className="max-w-7xl mx-auto px-4 sm:px-6">
-        {/* Responsive layout reflow: 1 col on mobile, 2 on tablet, 3 on desktop */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
-          {layout.columns.map((column: Column) => (
-            <ColumnView key={column.id} column={column} />
-          ))}
-        </div>
+        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+          {/* Responsive layout reflow: 1 col on mobile, 2 on tablet, 3 on desktop */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
+            {layout.columns.map((column: Column) => (
+              <ColumnView key={column.id} column={column} />
+            ))}
+          </div>
+        </DndContext>
       </main>
     </div>
   );

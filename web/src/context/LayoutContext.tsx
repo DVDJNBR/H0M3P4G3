@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
-import type { Layout } from '../types';
-import { fetchLayout, ApiError } from '../api/client';
+import React, { createContext, useContext, useReducer, useEffect, useCallback, useState } from 'react';
+import type { Layout, Column, Block } from '../types';
+import { fetchLayout, updateLayout, ApiError } from '../api/client';
+import { nanoid } from 'nanoid';
 
 interface State {
   layout: Layout | null;
@@ -18,7 +19,7 @@ type Action =
 
 const initialState: State = {
   layout: null,
-  isAuthenticated: true, // Assume true initially, 401 will flip to false
+  isAuthenticated: true,
   isLoading: true,
   error: null,
 };
@@ -64,14 +65,28 @@ function layoutReducer(state: State, action: Action): State {
 }
 
 interface ContextValue extends State {
+  isEditorMode: boolean;
+  toggleEditorMode: () => void;
   loadLayout: () => Promise<void>;
   markAuthenticated: () => void;
+  saveLayout: (newLayout: Layout) => Promise<void>;
+  addColumn: () => Promise<void>;
+  renameColumn: (columnId: string, newTitle: string) => Promise<void>;
+  deleteColumn: (columnId: string) => Promise<void>;
+  addBlock: (columnId: string) => Promise<void>;
+  renameBlock: (blockId: string, newTitle: string) => Promise<void>;
+  deleteBlock: (blockId: string) => Promise<void>;
 }
 
 const LayoutContext = createContext<ContextValue | undefined>(undefined);
 
 export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(layoutReducer, initialState);
+  const [isEditorMode, setIsEditorMode] = useState(false);
+
+  const toggleEditorMode = useCallback(() => {
+    setIsEditorMode((prev) => !prev);
+  }, []);
 
   const loadLayout = useCallback(async () => {
     dispatch({ type: 'SET_LOADING', payload: true });
@@ -93,6 +108,110 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     loadLayout();
   }, [loadLayout]);
 
+  const saveLayout = useCallback(
+    async (newLayout: Layout) => {
+      const previousLayout = state.layout;
+      dispatch({ type: 'SET_LAYOUT', payload: newLayout });
+
+      try {
+        const canonical = await updateLayout(newLayout);
+        dispatch({ type: 'SET_LAYOUT', payload: canonical });
+      } catch (err) {
+        // AD-3: Restore last canonical state and surface error on failure
+        if (previousLayout) {
+          dispatch({ type: 'SET_LAYOUT', payload: previousLayout });
+        }
+        const msg = err instanceof Error ? err.message : 'Failed to update layout';
+        dispatch({ type: 'SET_ERROR', payload: msg });
+      }
+    },
+    [state.layout],
+  );
+
+  const addColumn = useCallback(async () => {
+    if (!state.layout) return;
+    const newCol: Column = {
+      id: nanoid(),
+      title: 'Nouvelle colonne',
+      blocks: [],
+    };
+    const updated: Layout = {
+      columns: [...state.layout.columns, newCol],
+    };
+    await saveLayout(updated);
+  }, [state.layout, saveLayout]);
+
+  const renameColumn = useCallback(
+    async (columnId: string, newTitle: string) => {
+      if (!state.layout) return;
+      const updated: Layout = {
+        columns: state.layout.columns.map((col) =>
+          col.id === columnId ? { ...col, title: newTitle } : col,
+        ),
+      };
+      await saveLayout(updated);
+    },
+    [state.layout, saveLayout],
+  );
+
+  const deleteColumn = useCallback(
+    async (columnId: string) => {
+      if (!state.layout) return;
+      const updated: Layout = {
+        columns: state.layout.columns.filter((col) => col.id !== columnId),
+      };
+      await saveLayout(updated);
+    },
+    [state.layout, saveLayout],
+  );
+
+  const addBlock = useCallback(
+    async (columnId: string) => {
+      if (!state.layout) return;
+      const newBlock: Block = {
+        kind: 'links',
+        id: nanoid(),
+        title: 'Nouveau bloc',
+        links: [],
+      };
+      const updated: Layout = {
+        columns: state.layout.columns.map((col) =>
+          col.id === columnId ? { ...col, blocks: [...col.blocks, newBlock] } : col,
+        ),
+      };
+      await saveLayout(updated);
+    },
+    [state.layout, saveLayout],
+  );
+
+  const renameBlock = useCallback(
+    async (blockId: string, newTitle: string) => {
+      if (!state.layout) return;
+      const updated: Layout = {
+        columns: state.layout.columns.map((col) => ({
+          ...col,
+          blocks: col.blocks.map((b) => (b.id === blockId ? { ...b, title: newTitle } : b)),
+        })),
+      };
+      await saveLayout(updated);
+    },
+    [state.layout, saveLayout],
+  );
+
+  const deleteBlock = useCallback(
+    async (blockId: string) => {
+      if (!state.layout) return;
+      const updated: Layout = {
+        columns: state.layout.columns.map((col) => ({
+          ...col,
+          blocks: col.blocks.filter((b) => b.id !== blockId),
+        })),
+      };
+      await saveLayout(updated);
+    },
+    [state.layout, saveLayout],
+  );
+
   useEffect(() => {
     loadLayout();
   }, [loadLayout]);
@@ -101,8 +220,17 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     <LayoutContext.Provider
       value={{
         ...state,
+        isEditorMode,
+        toggleEditorMode,
         loadLayout,
         markAuthenticated,
+        saveLayout,
+        addColumn,
+        renameColumn,
+        deleteColumn,
+        addBlock,
+        renameBlock,
+        deleteBlock,
       }}
     >
       {children}

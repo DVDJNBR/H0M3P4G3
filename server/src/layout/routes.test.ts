@@ -149,3 +149,83 @@ describe('GET /api/layout', () => {
     });
   });
 });
+
+describe('PUT /api/layout', () => {
+  it('updates the layout document and returns 200 with the canonical layout when valid', async () => {
+    const layoutStore = await initLayoutStore(dataDir);
+    const app = createApp({ layoutStore, authConfig });
+
+    const newLayout = {
+      columns: [
+        {
+          id: 'col-1',
+          title: 'Main Column',
+          blocks: [
+            {
+              kind: 'links' as const,
+              id: 'b-1',
+              title: 'Dev Links',
+              links: [{ id: 'l-1', title: 'GitHub', url: 'https://github.com' }],
+            },
+          ],
+        },
+      ],
+    };
+
+    const res = await app.request('/api/layout', {
+      method: 'PUT',
+      headers: { ...authHeaders, 'content-type': 'application/json' },
+      body: JSON.stringify(newLayout),
+    });
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual(newLayout);
+
+    // Verify it persisted
+    const readBack = await layoutStore.readLayout();
+    expect(readBack).toEqual(newLayout);
+  });
+
+  it('returns 400 with invalidLayout code when layout schema validation fails', async () => {
+    const layoutStore = await initLayoutStore(dataDir);
+    const app = createApp({ layoutStore, authConfig });
+
+    const invalidLayout = {
+      columns: [
+        {
+          id: 'col-1',
+          title: 'Main',
+          blocks: [{ kind: 'invalid-kind', id: 'b-1' }],
+        },
+      ],
+    };
+
+    const res = await app.request('/api/layout', {
+      method: 'PUT',
+      headers: { ...authHeaders, 'content-type': 'application/json' },
+      body: JSON.stringify(invalidLayout),
+    });
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({
+      error: {
+        code: 'invalidLayout',
+        message: 'Layout document failed schema validation',
+      },
+    });
+  });
+
+  it('returns 401 AD-7 envelope without a session', async () => {
+    const layoutStore = await initLayoutStore(dataDir);
+    const app = createApp({ layoutStore, authConfig });
+
+    const res = await app.request('/api/layout', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ columns: [] }),
+    });
+
+    expect(res.status).toBe(401);
+  });
+});
+

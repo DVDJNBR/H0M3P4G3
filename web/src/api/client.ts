@@ -42,6 +42,32 @@ export async function fetchLayout(): Promise<Layout> {
   return res.json();
 }
 
+export async function updateLayout(layout: Layout): Promise<Layout> {
+  const res = await fetch('/api/layout', {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify(layout),
+  });
+
+  if (!res.ok) {
+    let errorData: ApiErrorResponse | null = null;
+    try {
+      errorData = await res.json();
+    } catch {
+      // Ignore
+    }
+
+    const code = errorData?.error?.code || 'updateFailed';
+    const message = errorData?.error?.message || `Failed to update layout (${res.status})`;
+    throw new ApiError(code, message, res.status);
+  }
+
+  return res.json();
+}
+
 export async function login(password: string, totp: string): Promise<void> {
   const res = await fetch('/api/login', {
     method: 'POST',

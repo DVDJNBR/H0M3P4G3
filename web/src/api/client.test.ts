@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { fetchLayout, login, ApiError } from './client';
+import { fetchLayout, updateLayout, login, ApiError } from './client';
 
 describe('API Client', () => {
   const originalFetch = globalThis.fetch;
@@ -21,7 +21,7 @@ describe('API Client', () => {
             title: 'Main',
             blocks: [
               {
-                kind: 'links',
+                kind: 'links' as const,
                 id: 'b-1',
                 title: 'Tech',
                 links: [{ id: 'l-1', title: 'GitHub', url: 'https://github.com' }],
@@ -60,6 +60,40 @@ describe('API Client', () => {
         expect(apiErr.code).toBe('unauthorized');
         expect(apiErr.message).toBe('Session invalid');
       }
+    });
+  });
+
+  describe('updateLayout', () => {
+    it('sends PUT /api/layout and returns canonical layout on 200 OK', async () => {
+      const mockLayout = {
+        columns: [{ id: 'col-1', title: 'Updated', blocks: [] }],
+      };
+
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => mockLayout,
+      } as unknown as Response);
+
+      const result = await updateLayout(mockLayout);
+      expect(result).toEqual(mockLayout);
+      expect(globalThis.fetch).toHaveBeenCalledWith('/api/layout', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(mockLayout),
+      });
+    });
+
+    it('throws ApiError on 400 invalid layout', async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: async () => ({ error: { code: 'invalidLayout', message: 'Schema failed' } }),
+      } as unknown as Response);
+
+      await expect(updateLayout({ columns: [] })).rejects.toThrow(ApiError);
     });
   });
 
@@ -102,3 +136,4 @@ describe('API Client', () => {
     });
   });
 });
+
