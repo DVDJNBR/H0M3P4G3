@@ -10,6 +10,8 @@ import { createAuthRoutes, type LoginConfig } from './auth/routes';
 import { loadConfig, type Config } from './config';
 import { createFaviconRoutes } from './favicon/routes';
 import { createLayoutRoutes } from './layout/routes';
+import { createRaindropRoutes } from './raindrop/routes';
+import { startRaindropPoller } from './raindrop/poller';
 import { initLayoutStore, type LayoutStore } from './storage/layout-store';
 
 export interface AppDeps {
@@ -48,6 +50,10 @@ export function createApp(deps: AppDeps): Hono {
   app.use('/api/*', createAuthMiddleware(deps.authConfig.sessionSecret));
 
   app.route('/', createLayoutRoutes(deps.layoutStore));
+
+  if (deps.dataDir) {
+    app.route('/', createRaindropRoutes(deps.dataDir));
+  }
 
   // AD-1: Single process serving both static bundle and API routes.
   // Serve SPA static assets from staticDir (web/dist) if present.
@@ -106,6 +112,28 @@ async function main(): Promise<void> {
   }
 
   const layoutStore = await initLayoutStore(config.dataDir);
+
+  startRaindropPoller(
+    config.dataDir,
+    async () => {
+      try {
+        const layout = await layoutStore.readLayout();
+        const ids: string[] = [];
+        layout.columns.forEach((col) => {
+          col.blocks.forEach((b) => {
+            if (b.kind === 'raindrop' && b.collectionId) {
+              ids.push(b.collectionId);
+            }
+          });
+        });
+        return ids;
+      } catch {
+        return [];
+      }
+    },
+    config.raindropToken,
+  );
+
   const app = createApp({
     layoutStore,
     dataDir: config.dataDir,

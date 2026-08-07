@@ -19,6 +19,22 @@ export class ApiError extends Error {
   }
 }
 
+export type RaindropCacheMap = Record<
+  string,
+  {
+    collectionId: string;
+    fetchedAt: string;
+    items: Array<{
+      id: number;
+      title: string;
+      link: string;
+      domain: string;
+      cover?: string;
+      created: string;
+    }>;
+  }
+>;
+
 export async function fetchLayout(): Promise<Layout> {
   const res = await fetch('/api/layout', {
     headers: {
@@ -66,6 +82,18 @@ export async function updateLayout(layout: Layout): Promise<Layout> {
   }
 
   return res.json();
+}
+
+export async function fetchRaindropCache(): Promise<RaindropCacheMap> {
+  try {
+    const res = await fetch('/api/raindrop-cache', {
+      headers: { Accept: 'application/json' },
+    });
+    if (!res.ok) return {};
+    return await res.json();
+  } catch {
+    return {};
+  }
 }
 
 export async function login(password: string, totp: string): Promise<void> {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSortable, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { Block, Link } from '../types';
@@ -6,6 +6,7 @@ import { useLayout } from '../context/LayoutContext';
 import { LinkItem } from './LinkItem';
 import { ConfirmModal } from './ConfirmModal';
 import { LinkModal } from './LinkModal';
+import { fetchRaindropCache, type RaindropCacheMap } from '../api/client';
 
 interface BlockViewProps {
   block: Block;
@@ -17,6 +18,7 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
   const [titleInput, setTitleInput] = useState(block.title);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [showAddLinkModal, setShowAddLinkModal] = useState(false);
+  const [raindropData, setRaindropData] = useState<RaindropCacheMap[string] | null>(null);
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: block.id,
@@ -28,6 +30,16 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
     transition,
     opacity: isDragging ? 0.5 : 1,
   };
+
+  useEffect(() => {
+    if (block.kind === 'raindrop') {
+      fetchRaindropCache().then((cache) => {
+        if (cache[block.collectionId]) {
+          setRaindropData(cache[block.collectionId] || null);
+        }
+      });
+    }
+  }, [block]);
 
   const handleTitleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +58,10 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
   };
 
   const linkIds = block.kind === 'links' ? block.links.map((l) => l.id) : [];
+
+  const isStale = raindropData?.fetchedAt
+    ? Date.now() - new Date(raindropData.fetchedAt).getTime() > 20 * 60 * 1000
+    : false;
 
   return (
     <>
@@ -85,11 +101,16 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
             ) : (
               <h3
                 onClick={() => isEditorMode && setIsEditingTitle(true)}
-                className={`text-xs font-semibold uppercase tracking-wider text-zinc-400 truncate ${
+                className={`text-xs font-semibold uppercase tracking-wider text-zinc-400 truncate flex items-center gap-2 ${
                   isEditorMode ? 'cursor-pointer hover:text-zinc-200 hover:underline' : ''
                 }`}
               >
-                {block.title || 'Sans titre'}
+                <span>{block.title || 'Sans titre'}</span>
+                {block.kind === 'raindrop' && isStale && (
+                  <span className="text-[10px] text-amber-400 font-normal px-1.5 py-0.2 rounded bg-amber-500/10 border border-amber-500/20">
+                    Hors ligne / Obsolète
+                  </span>
+                )}
               </h3>
             )}
           </div>
@@ -135,11 +156,30 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
         )}
 
         {block.kind === 'raindrop' && (
-          <div className="p-3 rounded-lg bg-indigo-950/20 border border-indigo-900/30 text-xs text-indigo-300 flex items-center justify-between">
-            <span>Collection Raindrop #{block.collectionId}</span>
-            <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-900/40 text-indigo-400 font-mono">
-              Epic 3
-            </span>
+          <div className="flex flex-col gap-1.5">
+            {!raindropData || raindropData.items.length === 0 ? (
+              <div className="p-3 rounded-lg bg-indigo-950/20 border border-indigo-900/30 text-xs text-indigo-300 flex items-center justify-between">
+                <span>Collection Raindrop #{block.collectionId}</span>
+                <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-900/40 text-indigo-400 font-mono">
+                  Raindrop.io
+                </span>
+              </div>
+            ) : (
+              raindropData.items.map((item) => (
+                <a
+                  key={item.id}
+                  href={item.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between p-2 rounded-lg bg-zinc-900/40 hover:bg-zinc-800/60 border border-zinc-800/40 hover:border-zinc-700/60 transition-all text-xs text-zinc-300 hover:text-white"
+                >
+                  <span className="truncate font-medium">{item.title}</span>
+                  <span className="text-[10px] text-zinc-500 font-mono shrink-0 ml-2">
+                    {item.domain}
+                  </span>
+                </a>
+              ))
+            )}
           </div>
         )}
       </div>
@@ -158,9 +198,9 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
       <LinkModal
         isOpen={showAddLinkModal}
         title="Ajouter un lien"
-        onSave={(url, title) => {
+        onSave={(url, title, faviconOverride) => {
           setShowAddLinkModal(false);
-          addLink(block.id, url, title);
+          addLink(block.id, url, title, faviconOverride);
         }}
         onCancel={() => setShowAddLinkModal(false)}
       />
