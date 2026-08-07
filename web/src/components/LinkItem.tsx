@@ -25,7 +25,17 @@ export const LinkItem: React.FC<LinkItemProps> = ({ link }) => {
     opacity: isDragging ? 0.4 : 1,
   };
 
-  const iconUrl = !imgError && link.faviconOverride ? link.faviconOverride : null;
+  // AD-8, NFR5: Priority: faviconOverride > same-origin /api/favicons/:domain > SVG fallback
+  let domain = '';
+  try {
+    domain = new URL(link.url).hostname;
+  } catch {
+    // Ignore URL parse error
+  }
+
+  const iconUrl = !imgError
+    ? link.faviconOverride || (domain ? `/api/favicons/${domain}` : null)
+    : null;
 
   return (
     <>
@@ -56,7 +66,7 @@ export const LinkItem: React.FC<LinkItemProps> = ({ link }) => {
             </div>
           )}
 
-          <div className="w-5 h-5 rounded flex items-center justify-center shrink-0 bg-zinc-800 text-zinc-400 group-hover:text-indigo-400 group-hover:bg-zinc-700/50 transition-colors">
+          <div className="w-5 h-5 rounded flex items-center justify-center shrink-0 bg-zinc-800 text-zinc-400 group-hover:text-indigo-400 group-hover:bg-zinc-700/50 transition-colors overflow-hidden">
             {iconUrl ? (
               <img
                 src={iconUrl}
@@ -102,9 +112,10 @@ export const LinkItem: React.FC<LinkItemProps> = ({ link }) => {
         title="Éditer le lien"
         initialUrl={link.url}
         initialTitle={link.title}
-        onSave={(url, title) => {
+        initialFaviconOverride={link.faviconOverride}
+        onSave={(url, title, faviconOverride) => {
           setIsEditModalOpen(false);
-          updateLinkDetails(link.id, url, title);
+          updateLinkDetails(link.id, url, title, faviconOverride);
         }}
         onCancel={() => setIsEditModalOpen(false)}
       />

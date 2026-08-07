@@ -5,7 +5,8 @@ interface LinkModalProps {
   title: string;
   initialUrl?: string;
   initialTitle?: string;
-  onSave: (url: string, title: string) => void;
+  initialFaviconOverride?: string;
+  onSave: (url: string, title: string, faviconOverride?: string) => void;
   onCancel: () => void;
 }
 
@@ -14,11 +15,13 @@ export const LinkModal: React.FC<LinkModalProps> = ({
   title: modalTitle,
   initialUrl = '',
   initialTitle = '',
+  initialFaviconOverride = '',
   onSave,
   onCancel,
 }) => {
   const [url, setUrl] = useState(initialUrl);
   const [title, setTitle] = useState(initialTitle);
+  const [faviconOverride, setFaviconOverride] = useState(initialFaviconOverride);
   const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
@@ -43,8 +46,21 @@ export const LinkModal: React.FC<LinkModalProps> = ({
       return;
     }
 
+    let trimmedOverride = faviconOverride.trim();
+    if (trimmedOverride) {
+      if (!/^https?:\/\//i.test(trimmedOverride)) {
+        trimmedOverride = `https://${trimmedOverride}`;
+      }
+      try {
+        new URL(trimmedOverride);
+      } catch {
+        setError('URL de favicon surcharge invalide (http:// ou https://).');
+        return;
+      }
+    }
+
     setError(null);
-    onSave(trimmedUrl, title.trim());
+    onSave(trimmedUrl, title.trim(), trimmedOverride || undefined);
   };
 
   return (
@@ -83,6 +99,19 @@ export const LinkModal: React.FC<LinkModalProps> = ({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Mon lien"
+              className="w-full px-3.5 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-100 text-sm focus:outline-none focus:border-indigo-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-zinc-400 uppercase tracking-wider mb-1.5">
+              Favicon Surchargé (URL optionnelle)
+            </label>
+            <input
+              type="text"
+              value={faviconOverride}
+              onChange={(e) => setFaviconOverride(e.target.value)}
+              placeholder="https://custom-icon.png"
               className="w-full px-3.5 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-100 text-sm focus:outline-none focus:border-indigo-500"
             />
           </div>

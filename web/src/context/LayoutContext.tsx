@@ -76,8 +76,8 @@ interface ContextValue extends State {
   addBlock: (columnId: string) => Promise<void>;
   renameBlock: (blockId: string, newTitle: string) => Promise<void>;
   deleteBlock: (blockId: string) => Promise<void>;
-  addLink: (blockId: string, url: string, title?: string) => Promise<void>;
-  updateLinkDetails: (linkId: string, url: string, title: string) => Promise<void>;
+  addLink: (blockId: string, url: string, title?: string, faviconOverride?: string) => Promise<void>;
+  updateLinkDetails: (linkId: string, url: string, title: string, faviconOverride?: string) => Promise<void>;
   deleteLink: (linkId: string) => Promise<void>;
 }
 
@@ -215,7 +215,7 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   );
 
   const addLink = useCallback(
-    async (blockId: string, url: string, title?: string) => {
+    async (blockId: string, url: string, title?: string, faviconOverride?: string) => {
       if (!state.layout) return;
       let finalTitle = title?.trim();
       if (!finalTitle) {
@@ -230,6 +230,7 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         id: nanoid(),
         url: url.trim(),
         title: finalTitle,
+        faviconOverride: faviconOverride?.trim() || undefined,
       };
 
       const updated: Layout = {
@@ -249,7 +250,7 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   );
 
   const updateLinkDetails = useCallback(
-    async (linkId: string, url: string, title: string) => {
+    async (linkId: string, url: string, title: string, faviconOverride?: string) => {
       if (!state.layout) return;
       let finalTitle = title.trim();
       if (!finalTitle) {
@@ -268,7 +269,14 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               return {
                 ...b,
                 links: b.links.map((l) =>
-                  l.id === linkId ? { ...l, url: url.trim(), title: finalTitle } : l,
+                  l.id === linkId
+                    ? {
+                        ...l,
+                        url: url.trim(),
+                        title: finalTitle,
+                        faviconOverride: faviconOverride?.trim() || undefined,
+                      }
+                    : l,
                 ),
               };
             }

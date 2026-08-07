@@ -8,6 +8,7 @@ import { createAuthMiddleware } from './auth/middleware';
 import { createRateLimiter, type RateLimiter } from './auth/rate-limiter';
 import { createAuthRoutes, type LoginConfig } from './auth/routes';
 import { loadConfig, type Config } from './config';
+import { createFaviconRoutes } from './favicon/routes';
 import { createLayoutRoutes } from './layout/routes';
 import { initLayoutStore, type LayoutStore } from './storage/layout-store';
 
@@ -16,6 +17,7 @@ export interface AppDeps {
   authConfig: LoginConfig;
   rateLimiter?: RateLimiter;
   staticDir?: string;
+  dataDir?: string;
 }
 
 // AD-7: JSON under /api/*, camelCase keys, error envelope
@@ -35,6 +37,11 @@ export function createApp(deps: AppDeps): Hono {
   // Registering it before the wall below is what exempts it -- every
   // route registered *after* the middleware stays walled.
   app.get('/api/health', (c) => c.json({ status: 'ok' }));
+
+  // Favicons served same-origin (AD-8) without requiring session cookies for <img> tags
+  if (deps.dataDir) {
+    app.route('/', createFaviconRoutes(deps.dataDir));
+  }
 
   // FR-9, AD-4: every remaining /api/* route is walled behind a valid
   // session.
@@ -101,6 +108,7 @@ async function main(): Promise<void> {
   const layoutStore = await initLayoutStore(config.dataDir);
   const app = createApp({
     layoutStore,
+    dataDir: config.dataDir,
     authConfig: {
       passwordHash: config.passwordHash,
       totpSecret: config.totpSecret,
