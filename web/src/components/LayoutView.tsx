@@ -8,13 +8,13 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates, arrayMove } from '@dnd-kit/sortable';
-import type { Column, Layout, Block } from '../types';
+import type { Column, Layout, Block, Link, LinksBlock } from '../types';
 import { useLayout } from '../context/LayoutContext';
 import { ColumnView } from './ColumnView';
 import { Header } from './Header';
 
 export const LayoutView: React.FC = () => {
-  const { layout, isLoading, error, loadLayout, isEditorMode, saveLayout } = useLayout();
+  const { layout, isLoading, error, loadLayout, saveLayout } = useLayout();
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -34,76 +34,151 @@ export const LayoutView: React.FC = () => {
     const activeId = String(active.id);
     const overId = String(over.id);
 
-    // Find active block & its source column
+    // 1. Check if active item is a Block
     let sourceColIndex = -1;
     let activeBlockIndex = -1;
-    let activeBlock: Block | null = null;
+    let isBlockDrag = false;
 
     layout.columns.forEach((col, colIdx) => {
       const bIdx = col.blocks.findIndex((b) => b.id === activeId);
       if (bIdx !== -1) {
         sourceColIndex = colIdx;
         activeBlockIndex = bIdx;
-        activeBlock = col.blocks[bIdx]!;
+        isBlockDrag = true;
       }
     });
 
-    if (sourceColIndex === -1 || !activeBlock) return;
+    if (isBlockDrag) {
+      // Find target column
+      let targetColIndex = -1;
+      let targetBlockIndex = -1;
 
-    // Find target column
-    let targetColIndex = -1;
-    let targetBlockIndex = -1;
+      const directColIdx = layout.columns.findIndex((c) => c.id === overId);
+      if (directColIdx !== -1) {
+        targetColIndex = directColIdx;
+        targetBlockIndex = layout.columns[targetColIndex]!.blocks.length;
+      } else {
+        layout.columns.forEach((col, colIdx) => {
+          const bIdx = col.blocks.findIndex((b) => b.id === overId);
+          if (bIdx !== -1) {
+            targetColIndex = colIdx;
+            targetBlockIndex = bIdx;
+          }
+        });
+      }
 
-    // Check if over target is a column ID directly
-    const directColIdx = layout.columns.findIndex((c) => c.id === overId);
-    if (directColIdx !== -1) {
-      targetColIndex = directColIdx;
-      targetBlockIndex = layout.columns[targetColIndex]!.blocks.length;
-    } else {
-      // Over target is a block ID inside some column
-      layout.columns.forEach((col, colIdx) => {
-        const bIdx = col.blocks.findIndex((b) => b.id === overId);
-        if (bIdx !== -1) {
-          targetColIndex = colIdx;
-          targetBlockIndex = bIdx;
+      if (targetColIndex === -1) return;
+
+      const newColumns: Column[] = layout.columns.map((c) => ({
+        ...c,
+        blocks: [...c.blocks],
+      }));
+
+      if (sourceColIndex === targetColIndex) {
+        if (activeBlockIndex !== targetBlockIndex && targetBlockIndex !== -1) {
+          newColumns[sourceColIndex]!.blocks = arrayMove(
+            newColumns[sourceColIndex]!.blocks,
+            activeBlockIndex,
+            targetBlockIndex,
+          );
         }
+      } else {
+        const [movedBlock] = newColumns[sourceColIndex]!.blocks.splice(activeBlockIndex, 1);
+        if (movedBlock) {
+          if (targetBlockIndex >= 0) {
+            newColumns[targetColIndex]!.blocks.splice(targetBlockIndex, 0, movedBlock);
+          } else {
+            newColumns[targetColIndex]!.blocks.push(movedBlock);
+          }
+        }
+      }
+
+      saveLayout({ columns: newColumns });
+      return;
+    }
+
+    // 2. Check if active item is a Link
+    let sourceBlockColIdx = -1;
+    let sourceBlockIdx = -1;
+    let activeLinkIdx = -1;
+    let activeLink: Link | null = null;
+
+    layout.columns.forEach((col, colIdx) => {
+      col.blocks.forEach((block, bIdx) => {
+        if (block.kind === 'links') {
+          const lIdx = block.links.findIndex((l) => l.id === activeId);
+          if (lIdx !== -1) {
+            sourceBlockColIdx = colIdx;
+            sourceBlockIdx = bIdx;
+            activeLinkIdx = lIdx;
+            activeLink = block.links[lIdx]!;
+          }
+        }
+      });
+    });
+
+    if (!activeLink || sourceBlockColIdx === -1 || sourceBlockIdx === -1) return;
+
+    // Find target link block
+    let targetBlockColIdx = -1;
+    let targetBlockIdx = -1;
+    let targetLinkIdx = -1;
+
+    // Over target is direct block ID
+    layout.columns.forEach((col, colIdx) => {
+      const bIdx = col.blocks.findIndex((b) => b.id === overId && b.kind === 'links');
+      if (bIdx !== -1) {
+        targetBlockColIdx = colIdx;
+        targetBlockIdx = bIdx;
+        targetLinkIdx = (col.blocks[bIdx] as LinksBlock).links.length;
+      }
+    });
+
+    if (targetBlockColIdx === -1) {
+      // Over target is another link ID
+      layout.columns.forEach((col, colIdx) => {
+        col.blocks.forEach((block, bIdx) => {
+          if (block.kind === 'links') {
+            const lIdx = block.links.findIndex((l) => l.id === overId);
+            if (lIdx !== -1) {
+              targetBlockColIdx = colIdx;
+              targetBlockIdx = bIdx;
+              targetLinkIdx = lIdx;
+            }
+          }
+        });
       });
     }
 
-    if (targetColIndex === -1) return;
+    if (targetBlockColIdx === -1 || targetBlockIdx === -1) return;
 
-    // Clone columns array
+    // Clone layout structure
     const newColumns: Column[] = layout.columns.map((c) => ({
       ...c,
-      blocks: [...c.blocks],
+      blocks: c.blocks.map((b) => (b.kind === 'links' ? { ...b, links: [...b.links] } : b)),
     }));
 
-    if (sourceColIndex === targetColIndex) {
-      // Reordering within the same column
-      if (activeBlockIndex !== targetBlockIndex && targetBlockIndex !== -1) {
-        newColumns[sourceColIndex]!.blocks = arrayMove(
-          newColumns[sourceColIndex]!.blocks,
-          activeBlockIndex,
-          targetBlockIndex,
-        );
+    const sourceBlock = newColumns[sourceBlockColIdx]!.blocks[sourceBlockIdx] as LinksBlock;
+    const targetBlock = newColumns[targetBlockColIdx]!.blocks[targetBlockIdx] as LinksBlock;
+
+    if (sourceBlockColIdx === targetBlockColIdx && sourceBlockIdx === targetBlockIdx) {
+      // Reorder within same block
+      if (activeLinkIdx !== targetLinkIdx && targetLinkIdx !== -1) {
+        sourceBlock.links = arrayMove(sourceBlock.links, activeLinkIdx, targetLinkIdx);
       }
     } else {
-      // Moving block between columns
-      const [movedBlock] = newColumns[sourceColIndex]!.blocks.splice(activeBlockIndex, 1);
-      if (movedBlock) {
-        if (targetBlockIndex >= 0) {
-          newColumns[targetColIndex]!.blocks.splice(targetBlockIndex, 0, movedBlock);
+      // Move link from sourceBlock to targetBlock
+      const [movedLink] = sourceBlock.links.splice(activeLinkIdx, 1);
+      if (movedLink) {
+        if (targetLinkIdx >= 0) {
+          targetBlock.links.splice(targetLinkIdx, 0, movedLink);
         } else {
-          newColumns[targetColIndex]!.blocks.push(movedBlock);
+          targetBlock.links.push(movedLink);
         }
       }
     }
 
-    const updatedLayout: Layout = {
-      columns: newColumns,
-    };
-
-    saveLayout(updatedLayout);
+    saveLayout({ columns: newColumns });
   };
 
   if (isLoading) {
@@ -155,7 +230,6 @@ export const LayoutView: React.FC = () => {
       <Header />
       <main className="max-w-7xl mx-auto px-4 sm:px-6">
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-          {/* Responsive layout reflow: 1 col on mobile, 2 on tablet, 3 on desktop */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
             {layout.columns.map((column: Column) => (
               <ColumnView key={column.id} column={column} />

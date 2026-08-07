@@ -1,20 +1,22 @@
 import React, { useState } from 'react';
-import { useSortable } from '@dnd-kit/sortable';
+import { useSortable, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { Block, Link } from '../types';
 import { useLayout } from '../context/LayoutContext';
 import { LinkItem } from './LinkItem';
 import { ConfirmModal } from './ConfirmModal';
+import { LinkModal } from './LinkModal';
 
 interface BlockViewProps {
   block: Block;
 }
 
 export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
-  const { isEditorMode, renameBlock, deleteBlock } = useLayout();
+  const { isEditorMode, renameBlock, deleteBlock, addLink } = useLayout();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(block.title);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [showAddLinkModal, setShowAddLinkModal] = useState(false);
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: block.id,
@@ -36,13 +38,14 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
   };
 
   const handleDeleteRequest = () => {
-    // Acceptance Criteria: Prompt confirmation if block has links, otherwise delete immediately.
     if (block.kind === 'links' && block.links.length > 0) {
       setShowConfirmDelete(true);
     } else {
       deleteBlock(block.id);
     }
   };
+
+  const linkIds = block.kind === 'links' ? block.links.map((l) => l.id) : [];
 
   return (
     <>
@@ -60,7 +63,7 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
                 {...attributes}
                 {...listeners}
                 className="cursor-grab active:cursor-grabbing text-zinc-600 hover:text-zinc-300 p-0.5"
-                title="Glisser pour déplacer"
+                title="Glisser pour déplacer le bloc"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
@@ -92,26 +95,43 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
           </div>
 
           {isEditorMode && (
-            <button
-              onClick={handleDeleteRequest}
-              className="text-zinc-600 hover:text-red-400 transition-colors p-1"
-              title="Supprimer le bloc"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-            </button>
+            <div className="flex items-center gap-1">
+              {block.kind === 'links' && (
+                <button
+                  onClick={() => setShowAddLinkModal(true)}
+                  className="text-zinc-500 hover:text-indigo-400 p-1 transition-colors"
+                  title="Ajouter un lien"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                </button>
+              )}
+              <button
+                onClick={handleDeleteRequest}
+                className="text-zinc-500 hover:text-red-400 p-1 transition-colors"
+                title="Supprimer le bloc"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
           )}
         </div>
 
         {block.kind === 'links' && (
-          <div className="flex flex-col gap-1.5">
-            {block.links.length === 0 ? (
-              <p className="text-xs text-zinc-600 italic py-2">Aucun lien</p>
-            ) : (
-              block.links.map((link: Link) => <LinkItem key={link.id} link={link} />)
-            )}
-          </div>
+          <SortableContext items={linkIds} strategy={verticalListSortingStrategy}>
+            <div className="flex flex-col gap-1.5 min-h-[20px]">
+              {block.links.length === 0 ? (
+                <p className="text-xs text-zinc-600 italic py-2">
+                  {isEditorMode ? 'Cliquez sur + pour ajouter un lien' : 'Aucun lien'}
+                </p>
+              ) : (
+                block.links.map((link: Link) => <LinkItem key={link.id} link={link} />)
+              )}
+            </div>
+          </SortableContext>
         )}
 
         {block.kind === 'raindrop' && (
@@ -133,6 +153,16 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
           deleteBlock(block.id);
         }}
         onCancel={() => setShowConfirmDelete(false)}
+      />
+
+      <LinkModal
+        isOpen={showAddLinkModal}
+        title="Ajouter un lien"
+        onSave={(url, title) => {
+          setShowAddLinkModal(false);
+          addLink(block.id, url, title);
+        }}
+        onCancel={() => setShowAddLinkModal(false)}
       />
     </>
   );

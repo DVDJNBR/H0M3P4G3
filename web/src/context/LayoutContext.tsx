@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback, useState } from 'react';
-import type { Layout, Column, Block } from '../types';
+import type { Layout, Column, Block, Link } from '../types';
 import { fetchLayout, updateLayout, ApiError } from '../api/client';
 import { nanoid } from 'nanoid';
 
@@ -76,6 +76,9 @@ interface ContextValue extends State {
   addBlock: (columnId: string) => Promise<void>;
   renameBlock: (blockId: string, newTitle: string) => Promise<void>;
   deleteBlock: (blockId: string) => Promise<void>;
+  addLink: (blockId: string, url: string, title?: string) => Promise<void>;
+  updateLinkDetails: (linkId: string, url: string, title: string) => Promise<void>;
+  deleteLink: (linkId: string) => Promise<void>;
 }
 
 const LayoutContext = createContext<ContextValue | undefined>(undefined);
@@ -117,7 +120,6 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const canonical = await updateLayout(newLayout);
         dispatch({ type: 'SET_LAYOUT', payload: canonical });
       } catch (err) {
-        // AD-3: Restore last canonical state and surface error on failure
         if (previousLayout) {
           dispatch({ type: 'SET_LAYOUT', payload: previousLayout });
         }
@@ -212,6 +214,92 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     [state.layout, saveLayout],
   );
 
+  const addLink = useCallback(
+    async (blockId: string, url: string, title?: string) => {
+      if (!state.layout) return;
+      let finalTitle = title?.trim();
+      if (!finalTitle) {
+        try {
+          finalTitle = new URL(url).hostname.replace(/^www\./, '');
+        } catch {
+          finalTitle = url;
+        }
+      }
+
+      const newLink: Link = {
+        id: nanoid(),
+        url: url.trim(),
+        title: finalTitle,
+      };
+
+      const updated: Layout = {
+        columns: state.layout.columns.map((col) => ({
+          ...col,
+          blocks: col.blocks.map((b) => {
+            if (b.id === blockId && b.kind === 'links') {
+              return { ...b, links: [...b.links, newLink] };
+            }
+            return b;
+          }),
+        })),
+      };
+      await saveLayout(updated);
+    },
+    [state.layout, saveLayout],
+  );
+
+  const updateLinkDetails = useCallback(
+    async (linkId: string, url: string, title: string) => {
+      if (!state.layout) return;
+      let finalTitle = title.trim();
+      if (!finalTitle) {
+        try {
+          finalTitle = new URL(url).hostname.replace(/^www\./, '');
+        } catch {
+          finalTitle = url;
+        }
+      }
+
+      const updated: Layout = {
+        columns: state.layout.columns.map((col) => ({
+          ...col,
+          blocks: col.blocks.map((b) => {
+            if (b.kind === 'links') {
+              return {
+                ...b,
+                links: b.links.map((l) =>
+                  l.id === linkId ? { ...l, url: url.trim(), title: finalTitle } : l,
+                ),
+              };
+            }
+            return b;
+          }),
+        })),
+      };
+      await saveLayout(updated);
+    },
+    [state.layout, saveLayout],
+  );
+
+  const deleteLink = useCallback(
+    async (linkId: string) => {
+      if (!state.layout) return;
+      const updated: Layout = {
+        columns: state.layout.columns.map((col) => ({
+          ...col,
+          blocks: col.blocks.map((b) => {
+            if (b.kind === 'links') {
+              return { ...b, links: b.links.filter((l) => l.id !== linkId) };
+            }
+            return b;
+          }),
+        })),
+      };
+      await saveLayout(updated);
+    },
+    [state.layout, saveLayout],
+  );
+
   useEffect(() => {
     loadLayout();
   }, [loadLayout]);
@@ -231,6 +319,9 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         addBlock,
         renameBlock,
         deleteBlock,
+        addLink,
+        updateLinkDetails,
+        deleteLink,
       }}
     >
       {children}
