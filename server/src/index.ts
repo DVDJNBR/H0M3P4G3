@@ -1,5 +1,8 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { serve } from '@hono/node-server';
+import { serveStatic } from '@hono/node-server/serve-static';
 import { Hono } from 'hono';
 import { createAuthMiddleware } from './auth/middleware';
 import { createRateLimiter, type RateLimiter } from './auth/rate-limiter';
@@ -12,6 +15,7 @@ export interface AppDeps {
   layoutStore: LayoutStore;
   authConfig: LoginConfig;
   rateLimiter?: RateLimiter;
+  staticDir?: string;
 }
 
 // AD-7: JSON under /api/*, camelCase keys, error envelope
@@ -37,6 +41,25 @@ export function createApp(deps: AppDeps): Hono {
   app.use('/api/*', createAuthMiddleware(deps.authConfig.sessionSecret));
 
   app.route('/', createLayoutRoutes(deps.layoutStore));
+
+  // AD-1: Single process serving both static bundle and API routes.
+  // Serve SPA static assets from staticDir (web/dist) if present.
+  const targetStaticDir = deps.staticDir ?? path.resolve(process.cwd(), 'web/dist');
+  if (fs.existsSync(targetStaticDir)) {
+    const relStaticDir = path.relative(process.cwd(), targetStaticDir) || '.';
+    app.use('*', async (c, next) => {
+      if (c.req.path.startsWith('/api/')) {
+        return next();
+      }
+      return serveStatic({ root: relStaticDir })(c, next);
+    });
+    app.get('*', async (c, next) => {
+      if (c.req.path.startsWith('/api/')) {
+        return next();
+      }
+      return serveStatic({ path: path.join(relStaticDir, 'index.html') })(c, next);
+    });
+  }
 
   app.notFound((c) =>
     c.json(

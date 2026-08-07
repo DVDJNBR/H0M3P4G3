@@ -1,0 +1,24 @@
+name: h0m3p4g3
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: h0m3p4g3
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      - PORT=3000
+      - DATA_DIR=/data
+      - PASSWORD_HASH=${PASSWORD_HASH}
+      - TOTP_SECRET=${TOTP_SECRET}
+      - SESSION_SECRET=${SESSION_SECRET}
+      - RAINDROP_TOKEN=${RAINDROP_TOKEN:-placeholder}
+    volumes:
+      - h0m3p4g3-data:/data
+
+volumes:
+  h0m3p4g3-data:
+    driver: local
