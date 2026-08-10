@@ -6,6 +6,7 @@ import { useLayout } from '../context/LayoutContext';
 import { LinkItem } from './LinkItem';
 import { ConfirmModal } from './ConfirmModal';
 import { LinkModal } from './LinkModal';
+import { RaindropBlockModal } from './RaindropBlockModal';
 import { fetchRaindropCache, type RaindropCacheMap } from '../api/client';
 
 interface BlockViewProps {
@@ -13,11 +14,12 @@ interface BlockViewProps {
 }
 
 export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
-  const { isEditorMode, renameBlock, deleteBlock, addLink } = useLayout();
+  const { isEditorMode, renameBlock, deleteBlock, addLink, updateRaindropBlock } = useLayout();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(block.title);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [showAddLinkModal, setShowAddLinkModal] = useState(false);
+  const [showEditRaindropModal, setShowEditRaindropModal] = useState(false);
   const [raindropData, setRaindropData] = useState<RaindropCacheMap[string] | null>(null);
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -36,6 +38,8 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
       fetchRaindropCache().then((cache) => {
         if (cache[block.collectionId]) {
           setRaindropData(cache[block.collectionId] || null);
+        } else {
+          setRaindropData(null);
         }
       });
     }
@@ -62,6 +66,12 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
   const isStale = raindropData?.fetchedAt
     ? Date.now() - new Date(raindropData.fetchedAt).getTime() > 20 * 60 * 1000
     : false;
+
+  const raindropItems = raindropData?.items
+    ? block.kind === 'raindrop' && block.displayCap
+      ? raindropData.items.slice(0, block.displayCap)
+      : raindropData.items
+    : [];
 
   return (
     <>
@@ -128,6 +138,28 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
                   </svg>
                 </button>
               )}
+              {block.kind === 'raindrop' && (
+                <button
+                  onClick={() => setShowEditRaindropModal(true)}
+                  className="text-zinc-500 hover:text-indigo-400 p-1 transition-colors"
+                  title="Configurer la collection Raindrop"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                </button>
+              )}
               <button
                 onClick={handleDeleteRequest}
                 className="text-zinc-500 hover:text-red-400 p-1 transition-colors"
@@ -157,15 +189,15 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
 
         {block.kind === 'raindrop' && (
           <div className="flex flex-col gap-1.5">
-            {!raindropData || raindropData.items.length === 0 ? (
-              <div className="p-3 rounded-lg bg-indigo-950/20 border border-indigo-900/30 text-xs text-indigo-300 flex items-center justify-between">
-                <span>Collection Raindrop #{block.collectionId}</span>
-                <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-900/40 text-indigo-400 font-mono">
+            {raindropItems.length === 0 ? (
+              <div className="p-3 rounded-lg bg-zinc-900/40 border border-zinc-800/40 text-xs text-zinc-500 italic flex items-center justify-between">
+                <span>Collection indisponible ou vide ({block.collectionId || 'non configurée'})</span>
+                <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-900/40 text-indigo-400 font-mono shrink-0 ml-2">
                   Raindrop.io
                 </span>
               </div>
             ) : (
-              raindropData.items.map((item) => (
+              raindropItems.map((item) => (
                 <a
                   key={item.id}
                   href={item.link}
@@ -204,6 +236,25 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
         }}
         onCancel={() => setShowAddLinkModal(false)}
       />
+
+      {block.kind === 'raindrop' && (
+        <RaindropBlockModal
+          isOpen={showEditRaindropModal}
+          title="Configurer le bloc Raindrop"
+          initialTitle={block.title}
+          initialCollectionId={block.collectionId}
+          initialDisplayCap={block.displayCap}
+          onSave={(newTitle, newCollectionId, newDisplayCap) => {
+            setShowEditRaindropModal(false);
+            updateRaindropBlock(block.id, {
+              title: newTitle,
+              collectionId: newCollectionId,
+              displayCap: newDisplayCap,
+            });
+          }}
+          onCancel={() => setShowEditRaindropModal(false)}
+        />
+      )}
     </>
   );
 };

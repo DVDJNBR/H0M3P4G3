@@ -44,6 +44,29 @@ describe('layoutSchema', () => {
 });
 
 describe('blockSchema', () => {
+  it('parses a valid raindrop block with collectionId and displayCap', () => {
+    const valid = {
+      kind: 'raindrop' as const,
+      id: 'rd-1',
+      title: 'Medium Reads',
+      collectionId: 'col-999',
+      displayCap: 5,
+    };
+    expect(blockSchema.parse(valid)).toEqual(valid);
+  });
+
+  it('rejects a raindrop block with a non-positive displayCap', () => {
+    expect(() =>
+      blockSchema.parse({
+        kind: 'raindrop',
+        id: 'rd-1',
+        title: 'Medium Reads',
+        collectionId: 'col-999',
+        displayCap: 0,
+      }),
+    ).toThrow();
+  });
+
   it('rejects a Block with an unrecognized kind', () => {
     expect(() =>
       blockSchema.parse({ kind: 'bogus', id: 'b1', title: 'Broken' }),

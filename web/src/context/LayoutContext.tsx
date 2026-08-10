@@ -73,7 +73,14 @@ interface ContextValue extends State {
   addColumn: () => Promise<void>;
   renameColumn: (columnId: string, newTitle: string) => Promise<void>;
   deleteColumn: (columnId: string) => Promise<void>;
-  addBlock: (columnId: string) => Promise<void>;
+  addBlock: (
+    columnId: string,
+    blockConfig?: { kind?: 'links' | 'raindrop'; title?: string; collectionId?: string; displayCap?: number },
+  ) => Promise<void>;
+  updateRaindropBlock: (
+    blockId: string,
+    details: { title: string; collectionId: string; displayCap?: number },
+  ) => Promise<void>;
   renameBlock: (blockId: string, newTitle: string) => Promise<void>;
   deleteBlock: (blockId: string) => Promise<void>;
   addLink: (blockId: string, url: string, title?: string, faviconOverride?: string) => Promise<void>;
@@ -168,18 +175,60 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   );
 
   const addBlock = useCallback(
-    async (columnId: string) => {
+    async (
+      columnId: string,
+      blockConfig?: { kind?: 'links' | 'raindrop'; title?: string; collectionId?: string; displayCap?: number },
+    ) => {
       if (!state.layout) return;
-      const newBlock: Block = {
-        kind: 'links',
-        id: nanoid(),
-        title: 'Nouveau bloc',
-        links: [],
-      };
+      const kind = blockConfig?.kind || 'links';
+      let newBlock: Block;
+      if (kind === 'raindrop') {
+        newBlock = {
+          kind: 'raindrop',
+          id: nanoid(),
+          title: blockConfig?.title?.trim() || 'Raindrop',
+          collectionId: blockConfig?.collectionId?.trim() || '',
+          displayCap: blockConfig?.displayCap,
+        };
+      } else {
+        newBlock = {
+          kind: 'links',
+          id: nanoid(),
+          title: blockConfig?.title?.trim() || 'Nouveau bloc',
+          links: [],
+        };
+      }
       const updated: Layout = {
         columns: state.layout.columns.map((col) =>
           col.id === columnId ? { ...col, blocks: [...col.blocks, newBlock] } : col,
         ),
+      };
+      await saveLayout(updated);
+    },
+    [state.layout, saveLayout],
+  );
+
+  const updateRaindropBlock = useCallback(
+    async (
+      blockId: string,
+      details: { title: string; collectionId: string; displayCap?: number },
+    ) => {
+      if (!state.layout) return;
+      const updated: Layout = {
+        columns: state.layout.columns.map((col) => ({
+          ...col,
+          blocks: col.blocks.map((b) => {
+            if (b.id === blockId && b.kind === 'raindrop') {
+              return {
+                ...b,
+                title: details.title.trim(),
+                collectionId: details.collectionId.trim(),
+                displayCap: details.displayCap,
+              };
+            }
+            return b;
+          }),
+        })),
       };
       await saveLayout(updated);
     },
@@ -325,6 +374,7 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         renameColumn,
         deleteColumn,
         addBlock,
+        updateRaindropBlock,
         renameBlock,
         deleteBlock,
         addLink,
