@@ -111,7 +111,7 @@ describe('API Client', () => {
           'Content-Type': 'application/json',
           Accept: 'application/json',
         },
-        body: JSON.stringify({ password: 'password123', totp: '123456' }),
+        body: JSON.stringify({ password: 'password123', totpCode: '123456' }),
       });
     });
 

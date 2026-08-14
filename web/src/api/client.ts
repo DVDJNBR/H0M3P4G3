@@ -103,7 +103,7 @@ export async function login(password: string, totp: string): Promise<void> {
       'Content-Type': 'application/json',
       Accept: 'application/json',
     },
-    body: JSON.stringify({ password, totp }),
+    body: JSON.stringify({ password, totpCode: totp }),
   });
 
   if (!res.ok) {
