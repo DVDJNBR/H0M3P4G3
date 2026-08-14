@@ -4,15 +4,15 @@ import { pathToFileURL } from 'node:url';
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { Hono } from 'hono';
-import { createAuthMiddleware } from './auth/middleware';
-import { createRateLimiter, type RateLimiter } from './auth/rate-limiter';
-import { createAuthRoutes, type LoginConfig } from './auth/routes';
-import { loadConfig, type Config } from './config';
-import { createFaviconRoutes } from './favicon/routes';
-import { createLayoutRoutes } from './layout/routes';
-import { createRaindropRoutes } from './raindrop/routes';
-import { startRaindropPoller } from './raindrop/poller';
-import { initLayoutStore, type LayoutStore } from './storage/layout-store';
+import { createAuthMiddleware } from './auth/middleware.js';
+import { createRateLimiter, type RateLimiter } from './auth/rate-limiter.js';
+import { createAuthRoutes, type LoginConfig } from './auth/routes.js';
+import { loadConfig, type Config } from './config.js';
+import { createFaviconRoutes } from './favicon/routes.js';
+import { createLayoutRoutes } from './layout/routes.js';
+import { createRaindropRoutes } from './raindrop/routes.js';
+import { startRaindropPoller } from './raindrop/poller.js';
+import { initLayoutStore, type LayoutStore } from './storage/layout-store.js';
 
 export interface AppDeps {
   layoutStore: LayoutStore;

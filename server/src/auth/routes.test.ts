@@ -2,9 +2,9 @@ import { hashSync } from 'bcryptjs';
 import { Hono } from 'hono';
 import { generate } from 'otplib';
 import { describe, expect, it, vi } from 'vitest';
-import { createRateLimiter, type RateLimiter } from './rate-limiter';
-import { createAuthRoutes, type LoginConfig } from './routes';
-import { SESSION_COOKIE_NAME } from './session';
+import { createRateLimiter, type RateLimiter } from './rate-limiter.js';
+import { createAuthRoutes, type LoginConfig } from './routes.js';
+import { SESSION_COOKIE_NAME } from './session.js';
 
 const PASSWORD = 'correct-horse-battery-staple';
 // Same generation rule as .env.example's dev secret: Base32, >=16 bytes

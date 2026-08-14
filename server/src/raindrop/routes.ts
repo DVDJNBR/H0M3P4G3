@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { readRaindropCache } from './store';
+import { readRaindropCache } from './store.js';
 
 export function createRaindropRoutes(dataDir: string): Hono {
   const app = new Hono();

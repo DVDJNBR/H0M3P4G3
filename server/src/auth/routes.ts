@@ -9,8 +9,8 @@ import { compare } from 'bcryptjs';
 import { Hono } from 'hono';
 import { setCookie } from 'hono/cookie';
 import { verify as verifyTotp } from 'otplib';
-import type { RateLimiter } from './rate-limiter';
-import { SESSION_COOKIE_NAME, createSessionCookie, sessionCookieOptions } from './session';
+import type { RateLimiter } from './rate-limiter.js';
+import { SESSION_COOKIE_NAME, createSessionCookie, sessionCookieOptions } from './session.js';
 
 export interface LoginConfig {
   passwordHash: string;

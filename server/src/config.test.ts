@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { loadConfig } from './config';
+import { loadConfig } from './config.js';
 
 // Realistic-shaped values: PASSWORD_HASH must be a well-formed bcrypt hash
 // and TOTP_SECRET must Base32-decode to >=16 bytes now that loadConfig

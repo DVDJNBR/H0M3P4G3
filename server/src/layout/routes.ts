@@ -3,7 +3,7 @@
 // atomically (AD-2, AD-3, AD-10).
 import { Hono } from 'hono';
 import { layoutSchema } from '@h0m3p4g3/shared/schema';
-import { StorageError, type LayoutStore } from '../storage/layout-store';
+import { StorageError, type LayoutStore } from '../storage/layout-store.js';
 
 export function createLayoutRoutes(store: LayoutStore): Hono {
   const app = new Hono();

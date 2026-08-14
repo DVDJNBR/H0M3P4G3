@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { getCachedFavicon, getFallbackFavicon, sanitizeDomain } from './fetcher';
+import { getCachedFavicon, getFallbackFavicon, sanitizeDomain } from './fetcher.js';
 
 export function createFaviconRoutes(dataDir: string): Hono {
   const app = new Hono();

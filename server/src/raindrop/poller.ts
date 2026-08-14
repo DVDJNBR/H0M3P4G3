@@ -1,4 +1,4 @@
-import { readRaindropCache, writeRaindropCache, type RaindropItem, type RaindropCacheMap } from './store';
+import { readRaindropCache, writeRaindropCache, type RaindropItem, type RaindropCacheMap } from './store.js';
 
 interface RaindropApiResponseItem {
   _id: number;

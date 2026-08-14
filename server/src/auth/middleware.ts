@@ -11,7 +11,7 @@ import {
   createSessionCookie,
   sessionCookieOptions,
   verifySessionCookie,
-} from './session';
+} from './session.js';
 
 export function createAuthMiddleware(sessionSecret: string): MiddlewareHandler {
   return async (c, next) => {

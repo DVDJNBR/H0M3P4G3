@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SESSION_TTL_MS, createSessionCookie, sessionCookieOptions, verifySessionCookie } from './session';
+import { SESSION_TTL_MS, createSessionCookie, sessionCookieOptions, verifySessionCookie } from './session.js';
 
 const SECRET = 'test-session-secret';
 

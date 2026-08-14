@@ -2,8 +2,8 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { createFaviconRoutes } from './routes';
-import { sanitizeDomain, fetchAndStoreFavicon, getCachedFavicon } from './fetcher';
+import { createFaviconRoutes } from './routes.js';
+import { sanitizeDomain, fetchAndStoreFavicon, getCachedFavicon } from './fetcher.js';
 
 describe('Favicon Module', () => {
   let dataDir: string;

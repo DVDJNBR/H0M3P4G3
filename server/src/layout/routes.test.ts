@@ -3,9 +3,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { layoutSchema } from '@h0m3p4g3/shared/schema';
-import { authCookieHeader } from '../auth/test-helpers';
-import { createApp, type AppDeps } from '../index';
-import { initLayoutStore } from '../storage/layout-store';
+import { authCookieHeader } from '../auth/test-helpers.js';
+import { createApp, type AppDeps } from '../index.js';
+import { initLayoutStore } from '../storage/layout-store.js';
 
 let dataDir: string;
 

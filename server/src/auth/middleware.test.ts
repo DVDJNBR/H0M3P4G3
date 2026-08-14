@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { describe, expect, it } from 'vitest';
-import { createAuthMiddleware } from './middleware';
-import { SESSION_COOKIE_NAME, SESSION_TTL_MS, createSessionCookie, verifySessionCookie } from './session';
+import { createAuthMiddleware } from './middleware.js';
+import { SESSION_COOKIE_NAME, SESSION_TTL_MS, createSessionCookie, verifySessionCookie } from './session.js';
 
 const SECRET = 'middleware-test-secret';
 

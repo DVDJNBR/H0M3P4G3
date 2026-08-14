@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { layoutSchema, type Layout } from '@h0m3p4g3/shared/schema';
-import { initLayoutStore, StorageError } from './layout-store';
+import { initLayoutStore, StorageError } from './layout-store.js';
 
 // Module namespace objects are non-configurable under Vitest's native ESM
 // (vi.spyOn can't redefine `unlink` in place), so wrap it in a vi.fn at mock

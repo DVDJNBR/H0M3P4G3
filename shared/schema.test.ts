@@ -2,7 +2,7 @@
 // These tests exercise them directly — server-side storage/route tests only
 // cover them indirectly via the storage adapter and HTTP layer.
 import { describe, expect, it } from 'vitest';
-import { blockSchema, layoutSchema, linkSchema, type Layout } from './schema';
+import { blockSchema, layoutSchema, linkSchema, type Layout } from './schema.js';
 
 describe('layoutSchema', () => {
   it('parses a valid minimal Layout', () => {

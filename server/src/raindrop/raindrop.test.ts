@@ -2,9 +2,9 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { createRaindropRoutes } from './routes';
-import { readRaindropCache, writeRaindropCache } from './store';
-import { pollRaindropCollections } from './poller';
+import { createRaindropRoutes } from './routes.js';
+import { readRaindropCache, writeRaindropCache } from './store.js';
+import { pollRaindropCollections } from './poller.js';
 
 describe('Raindrop Module', () => {
   let dataDir: string;

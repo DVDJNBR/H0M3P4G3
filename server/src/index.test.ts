@@ -1,9 +1,9 @@
 import { hashSync } from 'bcryptjs';
 import { generate } from 'otplib';
 import { describe, expect, it } from 'vitest';
-import { authCookieHeader } from './auth/test-helpers';
-import { createApp, type AppDeps } from './index';
-import type { LayoutStore } from './storage/layout-store';
+import { authCookieHeader } from './auth/test-helpers.js';
+import { createApp, type AppDeps } from './index.js';
+import type { LayoutStore } from './storage/layout-store.js';
 
 // In-memory stub — these tests exercise health/404/500 behavior only; the
 // real store is covered in storage/ and layout/ tests.
