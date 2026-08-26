@@ -50,7 +50,7 @@ describe('POST /api/login', () => {
     expect(setCookie).toContain(`${SESSION_COOKIE_NAME}=`);
     expect(setCookie).toContain('HttpOnly');
     expect(setCookie).toContain('Secure');
-    expect(setCookie).toContain('SameSite=Lax');
+    expect(setCookie).toContain('SameSite=None');
   });
 
   it('given a wrong password (correct TOTP), returns 401 AD-7 with no cookie', async () => {

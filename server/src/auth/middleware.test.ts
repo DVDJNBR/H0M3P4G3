@@ -33,7 +33,7 @@ describe('auth middleware', () => {
     expect(setCookie).toBeTruthy();
     expect(setCookie).toContain('HttpOnly');
     expect(setCookie).toContain('Secure');
-    expect(setCookie).toContain('SameSite=Lax');
+    expect(setCookie).toContain('SameSite=None');
 
     const refreshedValue = setCookie?.match(new RegExp(`${SESSION_COOKIE_NAME}=([^;]+)`))?.[1];
     expect(refreshedValue).toBeTruthy();

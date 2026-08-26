@@ -64,6 +64,11 @@ export function createApp(deps: AppDeps): Hono {
       if (c.req.path.startsWith('/api/')) {
         return next();
       }
+      if (c.req.path.startsWith('/assets/')) {
+        c.header('Cache-Control', 'public, max-age=31536000, immutable');
+        // Vite content-hashes filenames under /assets/, so a given URL
+        // never changes meaning -- safe to cache forever.
+      }
       return serveStatic({ root: relStaticDir })(c, next);
     });
     app.get('*', async (c, next) => {

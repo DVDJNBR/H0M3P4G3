@@ -65,11 +65,11 @@ describe('createSessionCookie / verifySessionCookie', () => {
 });
 
 describe('sessionCookieOptions', () => {
-  it('is httpOnly, Secure, SameSite=Lax, path=/, with a 30-day maxAge in seconds', () => {
+  it('is httpOnly, Secure, SameSite=None, path=/, with a 30-day maxAge in seconds', () => {
     expect(sessionCookieOptions()).toEqual({
       httpOnly: true,
       secure: true,
-      sameSite: 'Lax',
+      sameSite: 'None',
       path: '/',
       maxAge: SESSION_TTL_MS / 1000,
     });

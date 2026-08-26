@@ -62,7 +62,10 @@ export function sessionCookieOptions(): CookieOptions {
   return {
     httpOnly: true,
     secure: true,
-    sameSite: 'Lax',
+    sameSite: 'None',
+    // The site is embedded in an iframe by the newtab-override extension
+    // (top-level context is chrome-extension://, not this domain), which
+    // makes every request cross-site -- Lax would silently drop the cookie.
     path: '/',
     maxAge: Math.floor(SESSION_TTL_MS / 1000),
   };

@@ -14,15 +14,48 @@ type Action =
   | { type: 'SET_LAYOUT'; payload: Layout }
   | { type: 'SET_UNAUTHENTICATED' }
   | { type: 'SET_AUTHENTICATED' }
-  | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'FETCH_START' }
   | { type: 'SET_ERROR'; payload: string | null };
 
-const initialState: State = {
-  layout: null,
-  isAuthenticated: true,
-  isLoading: true,
-  error: null,
-};
+const CACHED_LAYOUT_KEY = 'h0m3p4g3:cachedLayout';
+
+function readCachedLayout(): Layout | null {
+  try {
+    const raw = localStorage.getItem(CACHED_LAYOUT_KEY);
+    return raw ? (JSON.parse(raw) as Layout) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedLayout(layout: Layout): void {
+  try {
+    localStorage.setItem(CACHED_LAYOUT_KEY, JSON.stringify(layout));
+  } catch {
+    // Storage unavailable (private mode, quota) -- cache is a pure
+    // optimization, safe to skip.
+  }
+}
+
+function clearCachedLayout(): void {
+  try {
+    localStorage.removeItem(CACHED_LAYOUT_KEY);
+  } catch {
+    // Ignore
+  }
+}
+
+function createInitialState(): State {
+  const cached = readCachedLayout();
+  return {
+    layout: cached,
+    isAuthenticated: true,
+    isLoading: cached === null,
+    error: null,
+  };
+  // A cached layout paints immediately while loadLayout() revalidates in
+  // the background -- no cache means a genuine first load, spinner-gated.
+}
 
 function layoutReducer(state: State, action: Action): State {
   switch (action.type) {
@@ -48,11 +81,14 @@ function layoutReducer(state: State, action: Action): State {
         isAuthenticated: true,
         isLoading: true,
       };
-    case 'SET_LOADING':
+    case 'FETCH_START':
+      if (state.layout) return state;
       return {
         ...state,
-        isLoading: action.payload,
+        isLoading: true,
       };
+      // Only gates on a spinner when there's nothing cached to show yet --
+      // a cached layout keeps painting while this fetch revalidates it.
     case 'SET_ERROR':
       return {
         ...state,
@@ -91,7 +127,7 @@ interface ContextValue extends State {
 const LayoutContext = createContext<ContextValue | undefined>(undefined);
 
 export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [state, dispatch] = useReducer(layoutReducer, initialState);
+  const [state, dispatch] = useReducer(layoutReducer, undefined, createInitialState);
   const [isEditorMode, setIsEditorMode] = useState(false);
 
   const toggleEditorMode = useCallback(() => {
@@ -99,12 +135,14 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, []);
 
   const loadLayout = useCallback(async () => {
-    dispatch({ type: 'SET_LOADING', payload: true });
+    dispatch({ type: 'FETCH_START' });
     try {
       const data = await fetchLayout();
+      writeCachedLayout(data);
       dispatch({ type: 'SET_LAYOUT', payload: data });
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
+        clearCachedLayout();
         dispatch({ type: 'SET_UNAUTHENTICATED' });
       } else {
         const msg = err instanceof Error ? err.message : 'Failed to load layout';
@@ -125,6 +163,7 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       try {
         const canonical = await updateLayout(newLayout);
+        writeCachedLayout(canonical);
         dispatch({ type: 'SET_LAYOUT', payload: canonical });
       } catch (err) {
         if (previousLayout) {

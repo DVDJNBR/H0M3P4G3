@@ -84,7 +84,21 @@ export async function updateLayout(layout: Layout): Promise<Layout> {
   return res.json();
 }
 
+let inFlightRaindropCacheFetch: Promise<RaindropCacheMap> | null = null;
+
 export async function fetchRaindropCache(): Promise<RaindropCacheMap> {
+  if (inFlightRaindropCacheFetch) return inFlightRaindropCacheFetch;
+
+  inFlightRaindropCacheFetch = fetchRaindropCacheFromServer().finally(() => {
+    inFlightRaindropCacheFetch = null;
+  });
+  return inFlightRaindropCacheFetch;
+  // Every raindrop BlockView mounts at once on page load and each would
+  // otherwise fire its own request for the same payload -- sharing the
+  // in-flight promise collapses those into one round trip.
+}
+
+async function fetchRaindropCacheFromServer(): Promise<RaindropCacheMap> {
   try {
     const res = await fetch('/api/raindrop-cache', {
       headers: { Accept: 'application/json' },
