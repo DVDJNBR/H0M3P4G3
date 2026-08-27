@@ -34,28 +34,6 @@ jobs:
     needs: test-build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      # TEMPORARY diagnostic step -- the real deploy step below claims
-      # success on every push, but /home/ubuntu/H0M3P4G3 doesn't exist when
-      # checked directly on the VPS this domain's DNS points to. Confirming
-      # what host/path this action actually reaches before trusting it
-      # further. Remove once resolved.
-      - name: Debug target host
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_IP }}
-          port: 5790
-          username: deploy
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            echo "whoami: $(whoami)"
-            echo "hostname: $(hostname)"
-            echo "hostname -I: $(hostname -I)"
-            echo "pwd: $(pwd)"
-            echo "home listing:"
-            ls -la /home/ubuntu/ 2>&1 || true
-            echo "H0M3P4G3 check:"
-            ls -la /home/ubuntu/H0M3P4G3 2>&1 || true
-
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
