@@ -31,7 +31,6 @@ function defaultLayout(): Layout {
   return {
     columns: Array.from({ length: 3 }, () => ({
       id: nanoid(),
-      title: '',
       blocks: [],
     })),
   };

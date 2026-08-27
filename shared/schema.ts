@@ -46,7 +46,6 @@ export const blockSchema = z.discriminatedUnion('kind', [
 
 export const columnSchema = z.object({
   id: z.string().min(1),
-  title: z.string(),
   blocks: z.array(blockSchema),
 });
 

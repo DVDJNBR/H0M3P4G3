@@ -66,7 +66,7 @@ describe('API Client', () => {
   describe('updateLayout', () => {
     it('sends PUT /api/layout and returns canonical layout on 200 OK', async () => {
       const mockLayout = {
-        columns: [{ id: 'col-1', title: 'Updated', blocks: [] }],
+        columns: [{ id: 'col-1', blocks: [] }],
       };
 
       globalThis.fetch = vi.fn().mockResolvedValue({

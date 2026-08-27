@@ -8,8 +8,8 @@ describe('layoutSchema', () => {
   it('parses a valid minimal Layout', () => {
     const minimal: Layout = {
       columns: [
-        { id: 'col-1', title: '', blocks: [] },
-        { id: 'col-2', title: 'Reading', blocks: [] },
+        { id: 'col-1', blocks: [] },
+        { id: 'col-2', blocks: [] },
       ],
     };
     expect(layoutSchema.parse(minimal)).toEqual(minimal);
@@ -20,7 +20,6 @@ describe('layoutSchema', () => {
       columns: [
         {
           id: 'col-1',
-          title: 'Dev',
           blocks: [
             {
               kind: 'links',

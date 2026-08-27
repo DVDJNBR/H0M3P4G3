@@ -29,7 +29,6 @@ function sampleLayout(): Layout {
     columns: [
       {
         id: 'col-1',
-        title: 'Dev',
         blocks: [
           {
             kind: 'links',
@@ -68,7 +67,6 @@ describe('initLayoutStore', () => {
     expect(onDisk.columns).toHaveLength(3);
     for (const column of onDisk.columns) {
       expect(column.blocks).toEqual([]);
-      expect(column.title).toBe('');
       expect(typeof column.id).toBe('string');
       expect(column.id.length).toBeGreaterThan(0);
     }
@@ -141,7 +139,7 @@ describe('corruption handling', () => {
     const store = await initLayoutStore(dataDir);
     await writeFile(
       join(dataDir, 'layout.json'),
-      JSON.stringify({ columns: [{ id: 'x', title: 'y', blocks: [{ kind: 'bogus' }] }] }),
+      JSON.stringify({ columns: [{ id: 'x', blocks: [{ kind: 'bogus' }] }] }),
       'utf8',
     );
     await expect(store.readLayout()).rejects.toBeInstanceOf(StorageError);

@@ -47,7 +47,6 @@ describe('GET /api/layout', () => {
       columns: [
         {
           id: 'c1',
-          title: 'Left',
           blocks: [
             {
               kind: 'links' as const,
@@ -108,7 +107,6 @@ describe('GET /api/layout', () => {
         columns: [
           {
             id: 'c1',
-            title: 'Left',
             blocks: [{ kind: 'bogus', id: 'b1', title: 'Broken' }],
           },
         ],
@@ -159,7 +157,6 @@ describe('PUT /api/layout', () => {
       columns: [
         {
           id: 'col-1',
-          title: 'Main Column',
           blocks: [
             {
               kind: 'links' as const,
@@ -194,7 +191,6 @@ describe('PUT /api/layout', () => {
       columns: [
         {
           id: 'col-1',
-          title: 'Main',
           blocks: [{ kind: 'invalid-kind', id: 'b-1' }],
         },
       ],

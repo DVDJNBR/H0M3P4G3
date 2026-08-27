@@ -107,7 +107,6 @@ interface ContextValue extends State {
   markAuthenticated: () => void;
   saveLayout: (newLayout: Layout) => Promise<void>;
   addColumn: () => Promise<void>;
-  renameColumn: (columnId: string, newTitle: string) => Promise<void>;
   deleteColumn: (columnId: string) => Promise<void>;
   addBlock: (
     columnId: string,
@@ -181,7 +180,6 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (!state.layout) return;
     const newCol: Column = {
       id: nanoid(),
-      title: 'Nouvelle colonne',
       blocks: [],
     };
     const updated: Layout = {
@@ -189,19 +187,6 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
     await saveLayout(updated);
   }, [state.layout, saveLayout]);
-
-  const renameColumn = useCallback(
-    async (columnId: string, newTitle: string) => {
-      if (!state.layout) return;
-      const updated: Layout = {
-        columns: state.layout.columns.map((col) =>
-          col.id === columnId ? { ...col, title: newTitle } : col,
-        ),
-      };
-      await saveLayout(updated);
-    },
-    [state.layout, saveLayout],
-  );
 
   const deleteColumn = useCallback(
     async (columnId: string) => {
@@ -427,7 +412,6 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         markAuthenticated,
         saveLayout,
         addColumn,
-        renameColumn,
         deleteColumn,
         addBlock,
         updateRaindropBlock,
