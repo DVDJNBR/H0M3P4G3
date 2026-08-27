@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface LinkModalProps {
   isOpen: boolean;
@@ -23,6 +23,19 @@ export const LinkModal: React.FC<LinkModalProps> = ({
   const [title, setTitle] = useState(initialTitle);
   const [faviconOverride, setFaviconOverride] = useState(initialFaviconOverride);
   const [error, setError] = useState<string | null>(null);
+
+  // The modal instance stays mounted (isOpen just toggles visibility), so
+  // without this the fields would carry stale values from the previous
+  // open -- e.g. an "Ajouter" right after an "Éditer" would show the
+  // edited link's old URL instead of a blank form.
+  useEffect(() => {
+    if (isOpen) {
+      setUrl(initialUrl);
+      setTitle(initialTitle);
+      setFaviconOverride(initialFaviconOverride);
+      setError(null);
+    }
+  }, [isOpen, initialUrl, initialTitle, initialFaviconOverride]);
 
   if (!isOpen) return null;
 

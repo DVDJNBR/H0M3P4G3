@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { Link } from '../types';
+import type { Link, LinkDisplayMode } from '../types';
 import { useLayout } from '../context/LayoutContext';
 import { LinkModal } from './LinkModal';
 
 interface LinkItemProps {
   link: Link;
+  displayMode?: LinkDisplayMode;
 }
 
-export const LinkItem: React.FC<LinkItemProps> = ({ link }) => {
+export const LinkItem: React.FC<LinkItemProps> = ({ link, displayMode = 'iconAndText' }) => {
   const { isEditorMode, updateLinkDetails, deleteLink } = useLayout();
   const [imgError, setImgError] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -50,6 +51,7 @@ export const LinkItem: React.FC<LinkItemProps> = ({ link }) => {
           href={link.url}
           target="_blank"
           rel="noopener noreferrer"
+          title={displayMode === 'iconOnly' ? link.title || link.url : undefined}
           onClick={(e) => isEditorMode && e.preventDefault()}
           className="flex items-center gap-2.5 flex-1 min-w-0"
         >
@@ -80,7 +82,9 @@ export const LinkItem: React.FC<LinkItemProps> = ({ link }) => {
               </svg>
             )}
           </div>
-          <span className="truncate font-medium">{link.title || link.url}</span>
+          {displayMode === 'iconAndText' && (
+            <span className="truncate font-medium">{link.title || link.url}</span>
+          )}
         </a>
 
         {isEditorMode && (

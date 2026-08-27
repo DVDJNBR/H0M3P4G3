@@ -18,11 +18,16 @@ export const linkSchema = z.object({
   faviconOverride: httpUrlSchema.optional(),
 });
 
+// Optional, defaults to 'iconAndText' when absent so existing stored
+// blocks (created before this field existed) keep rendering unchanged.
+export const linkDisplayModeSchema = z.enum(['iconOnly', 'iconAndText']);
+
 export const linksBlockSchema = z.object({
   kind: z.literal('links'),
   id: z.string().min(1),
   title: z.string(),
   links: z.array(linkSchema),
+  displayMode: linkDisplayModeSchema.optional(),
 });
 
 export const raindropBlockSchema = z.object({
@@ -50,6 +55,7 @@ export const layoutSchema = z.object({
 });
 
 export type Link = z.infer<typeof linkSchema>;
+export type LinkDisplayMode = z.infer<typeof linkDisplayModeSchema>;
 export type LinksBlock = z.infer<typeof linksBlockSchema>;
 export type RaindropBlock = z.infer<typeof raindropBlockSchema>;
 export type Block = z.infer<typeof blockSchema>;

@@ -14,7 +14,14 @@ interface BlockViewProps {
 }
 
 export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
-  const { isEditorMode, renameBlock, deleteBlock, addLink, updateRaindropBlock } = useLayout();
+  const {
+    isEditorMode,
+    renameBlock,
+    deleteBlock,
+    addLink,
+    updateRaindropBlock,
+    setLinksBlockDisplayMode,
+  } = useLayout();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(block.title);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
@@ -62,6 +69,7 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
   };
 
   const linkIds = block.kind === 'links' ? block.links.map((l) => l.id) : [];
+  const displayMode = block.kind === 'links' ? block.displayMode ?? 'iconAndText' : 'iconAndText';
 
   const isStale = raindropData?.fetchedAt
     ? Date.now() - new Date(raindropData.fetchedAt).getTime() > 20 * 60 * 1000
@@ -128,6 +136,41 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
           {isEditorMode && (
             <div className="flex items-center gap-1">
               {block.kind === 'links' && (
+                <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-0.5 mr-1">
+                  <button
+                    onClick={() => setLinksBlockDisplayMode(block.id, 'iconOnly')}
+                    title="Icône seule"
+                    className={`flex items-center justify-center w-6 h-6 rounded-md transition-colors ${
+                      displayMode === 'iconOnly'
+                        ? 'bg-zinc-700 text-zinc-100'
+                        : 'text-zinc-500 hover:text-zinc-300'
+                    }`}
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 7a3 3 0 013-3h10a3 3 0 013 3v10a3 3 0 01-3 3H7a3 3 0 01-3-3V7z"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setLinksBlockDisplayMode(block.id, 'iconAndText')}
+                    title="Icône et nom"
+                    className={`flex items-center justify-center w-6 h-6 rounded-md transition-colors ${
+                      displayMode === 'iconAndText'
+                        ? 'bg-zinc-700 text-zinc-100'
+                        : 'text-zinc-500 hover:text-zinc-300'
+                    }`}
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h10" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+              {block.kind === 'links' && (
                 <button
                   onClick={() => setShowAddLinkModal(true)}
                   className="text-zinc-500 hover:text-indigo-400 p-1 transition-colors"
@@ -181,7 +224,9 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
                   {isEditorMode ? 'Cliquez sur + pour ajouter un lien' : 'Aucun lien'}
                 </p>
               ) : (
-                block.links.map((link: Link) => <LinkItem key={link.id} link={link} />)
+                block.links.map((link: Link) => (
+                  <LinkItem key={link.id} link={link} displayMode={displayMode} />
+                ))
               )}
             </div>
           </SortableContext>

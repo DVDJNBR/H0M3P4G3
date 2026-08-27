@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback, useState } from 'react';
-import type { Layout, Column, Block, Link } from '../types';
+import type { Layout, Column, Block, Link, LinkDisplayMode } from '../types';
 import { fetchLayout, updateLayout, ApiError } from '../api/client';
 import { nanoid } from 'nanoid';
 
@@ -118,6 +118,7 @@ interface ContextValue extends State {
     details: { title: string; collectionId: string; displayCap?: number },
   ) => Promise<void>;
   renameBlock: (blockId: string, newTitle: string) => Promise<void>;
+  setLinksBlockDisplayMode: (blockId: string, displayMode: LinkDisplayMode) => Promise<void>;
   deleteBlock: (blockId: string) => Promise<void>;
   addLink: (blockId: string, url: string, title?: string, faviconOverride?: string) => Promise<void>;
   updateLinkDetails: (linkId: string, url: string, title: string, faviconOverride?: string) => Promise<void>;
@@ -288,6 +289,22 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     [state.layout, saveLayout],
   );
 
+  const setLinksBlockDisplayMode = useCallback(
+    async (blockId: string, displayMode: LinkDisplayMode) => {
+      if (!state.layout) return;
+      const updated: Layout = {
+        columns: state.layout.columns.map((col) => ({
+          ...col,
+          blocks: col.blocks.map((b) =>
+            b.id === blockId && b.kind === 'links' ? { ...b, displayMode } : b,
+          ),
+        })),
+      };
+      await saveLayout(updated);
+    },
+    [state.layout, saveLayout],
+  );
+
   const deleteBlock = useCallback(
     async (blockId: string) => {
       if (!state.layout) return;
@@ -415,6 +432,7 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         addBlock,
         updateRaindropBlock,
         renameBlock,
+        setLinksBlockDisplayMode,
         deleteBlock,
         addLink,
         updateLinkDetails,
