@@ -9,13 +9,16 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:3000:3000"
+    # env_file passes .env's values straight through as container env vars,
+    # with no ${VAR} interpolation pass over them -- unlike the old
+    # `environment: - VAR=${VAR}` form, it never re-scans a value like a
+    # bcrypt hash for further $-references, so .env needs no $$ escaping
+    # and can be identical across every environment.
+    env_file:
+      - .env
     environment:
       - PORT=3000
       - DATA_DIR=/data
-      - PASSWORD_HASH=${PASSWORD_HASH}
-      - TOTP_SECRET=${TOTP_SECRET}
-      - SESSION_SECRET=${SESSION_SECRET}
-      - RAINDROP_TOKEN=${RAINDROP_TOKEN:-placeholder}
     volumes:
       - h0m3p4g3-data:/data
 
