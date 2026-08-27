@@ -76,7 +76,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-zinc-400 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5">
               URL (ex: https://github.com)
             </label>
             <input
@@ -91,7 +91,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-zinc-400 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5">
               Titre (optionnel - auto-déduit si vide)
             </label>
             <input
@@ -104,7 +104,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-zinc-400 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5">
               Favicon Surchargé (URL optionnelle)
             </label>
             <input

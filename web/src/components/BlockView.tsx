@@ -105,14 +105,14 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
                   onChange={(e) => setTitleInput(e.target.value)}
                   onBlur={handleTitleSubmit}
                   autoFocus
-                  className="w-full bg-zinc-900 border border-indigo-500/50 rounded px-2 py-0.5 text-xs text-zinc-100 uppercase tracking-wider font-semibold focus:outline-none"
+                  className="w-full bg-zinc-900 border border-indigo-500/50 rounded px-2 py-0.5 text-xs text-zinc-100 font-semibold focus:outline-none"
                 />
               </form>
             ) : (
               <h3
                 onClick={() => isEditorMode && setIsEditingTitle(true)}
-                className={`text-xs font-semibold uppercase tracking-wider text-zinc-400 truncate flex items-center gap-2 ${
-                  isEditorMode ? 'cursor-pointer hover:text-zinc-200 hover:underline' : ''
+                className={`text-xs font-semibold text-zinc-400 truncate flex items-center gap-2 ${
+                  isEditorMode ? 'cursor-pointer hover:text-zinc-200' : ''
                 }`}
               >
                 <span>{block.title || 'Sans titre'}</span>

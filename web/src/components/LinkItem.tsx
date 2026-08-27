@@ -48,7 +48,7 @@ export const LinkItem: React.FC<LinkItemProps> = ({ link }) => {
       >
         <a
           href={link.url}
-          target="_self"
+          target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => isEditorMode && e.preventDefault()}
           className="flex items-center gap-2.5 flex-1 min-w-0"

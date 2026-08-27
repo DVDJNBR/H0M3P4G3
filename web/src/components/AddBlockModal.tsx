@@ -73,7 +73,7 @@ export const AddBlockModal: React.FC<AddBlockModalProps> = ({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">
+            <label className="block text-xs font-medium text-zinc-400 mb-2">
               Type de bloc
             </label>
             <div className="grid grid-cols-2 gap-3">
@@ -112,7 +112,7 @@ export const AddBlockModal: React.FC<AddBlockModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-zinc-400 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5">
               Titre du bloc
             </label>
             <input
@@ -128,7 +128,7 @@ export const AddBlockModal: React.FC<AddBlockModalProps> = ({
           {kind === 'raindrop' && (
             <>
               <div>
-                <label className="block text-xs font-medium text-zinc-400 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-medium text-zinc-400 mb-1.5">
                   ID de collection Raindrop
                 </label>
                 <input
@@ -142,7 +142,7 @@ export const AddBlockModal: React.FC<AddBlockModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-zinc-400 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-medium text-zinc-400 mb-1.5">
                   Nombre max d'éléments à afficher (optionnel)
                 </label>
                 <input

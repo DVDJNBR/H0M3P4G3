@@ -228,7 +228,7 @@ export const LayoutView: React.FC = () => {
   return (
     <div className="min-h-screen bg-zinc-950 pb-16">
       <Header />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-16">
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
             {layout.columns.map((column: Column) => (

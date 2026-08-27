@@ -43,14 +43,14 @@ export const ColumnView: React.FC<ColumnViewProps> = ({ column }) => {
                   onChange={(e) => setTitleInput(e.target.value)}
                   onBlur={handleTitleSubmit}
                   autoFocus
-                  className="w-full bg-zinc-900 border border-indigo-500/50 rounded px-2 py-0.5 text-xs text-zinc-100 uppercase tracking-wider font-bold focus:outline-none"
+                  className="w-full bg-zinc-900 border border-indigo-500/50 rounded px-2 py-0.5 text-sm text-zinc-100 font-semibold focus:outline-none"
                 />
               </form>
             ) : (
               <h2
                 onClick={() => isEditorMode && setIsEditingTitle(true)}
-                className={`text-sm font-bold tracking-tight text-zinc-300 uppercase truncate ${
-                  isEditorMode ? 'cursor-pointer hover:text-zinc-100 hover:underline' : ''
+                className={`text-sm font-semibold text-zinc-300 truncate ${
+                  isEditorMode ? 'cursor-pointer hover:text-zinc-100' : ''
                 }`}
               >
                 {column.title || 'Colonne'}

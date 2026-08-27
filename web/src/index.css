@@ -1,20 +1,53 @@
 @import 'tailwindcss';
 
+/*
+ * Apple Design System dark-mode tokens (this app is dark-only, no
+ * toggle). Remapping the zinc and indigo Tailwind ramps here means every
+ * existing zinc- and indigo- utility class across the app resolves to
+ * the Apple palette without touching each component file.
+ */
+@theme {
+  /* zinc ramp -> Apple dark elevation/gray scale */
+  --color-zinc-950: #000000; /* bg */
+  --color-zinc-900: #1c1c1e; /* surface */
+  --color-zinc-800: #2c2c2e; /* elevated (cards) */
+  --color-zinc-700: #3a3a3c; /* popovers/hover borders */
+  --color-zinc-600: #48484a; /* idle icons */
+  --color-zinc-500: #636366;
+  --color-zinc-400: #a1a1a6; /* text-secondary */
+  --color-zinc-300: #c7c7cc;
+  --color-zinc-200: #e5e5ea;
+  --color-zinc-100: #f5f5f7; /* text-primary */
+
+  /* indigo ramp -> Apple accent blue */
+  --color-indigo-900: #0a2a4d;
+  --color-indigo-200: #b3d9ff;
+  --color-indigo-700: #1c7fe0;
+  --color-indigo-600: #2997ff; /* accent */
+  --color-indigo-500: #47a6ff;
+  --color-indigo-400: #6db9ff;
+  --color-indigo-300: #8ac7ff;
+}
+
 @layer base {
   :root {
-    --bg-main: #09090b;
-    --bg-card: rgba(24, 24, 27, 0.7);
+    --bg-main: #000000;
+    --bg-card: rgba(28, 28, 30, 0.65);
     --border-card: rgba(255, 255, 255, 0.08);
-    --text-primary: #f4f4f5;
-    --text-muted: #a1a1aa;
-    --accent: #6366f1;
-    --accent-hover: #4f46e5;
+    --text-primary: #f5f5f7;
+    --text-muted: #a1a1a6;
+    --accent: #2997ff;
+    --accent-hover: #47a6ff;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.5);
   }
 
   body {
     background-color: var(--bg-main);
     color: var(--text-primary);
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue',
+      Helvetica, Arial, sans-serif;
     min-height: 100vh;
     overflow-x: hidden;
   }
@@ -22,19 +55,21 @@
 
 .glass-panel {
   background: var(--bg-card);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
   border: 1px solid var(--border-card);
+  box-shadow: var(--shadow-sm);
 }
 
 .glass-panel-hover {
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background-color 0.4s ease, color 0.3s ease, border-color 0.4s ease, box-shadow 0.3s
+    cubic-bezier(0.25, 0.1, 0.25, 1), transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 .glass-panel-hover:hover {
-  border-color: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.16);
   transform: translateY(-1px);
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-md);
 }
 
 /* Custom scrollbar */

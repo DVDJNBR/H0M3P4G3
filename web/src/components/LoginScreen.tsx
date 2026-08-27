@@ -64,7 +64,7 @@ export const LoginScreen: React.FC = () => {
           )}
 
           <div>
-            <label className="block text-xs font-medium text-zinc-300 uppercase tracking-wider mb-2">
+            <label className="block text-xs font-medium text-zinc-300 mb-2">
               Mot de passe
             </label>
             <div className="relative">
@@ -101,7 +101,7 @@ export const LoginScreen: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-zinc-300 uppercase tracking-wider mb-2">
+            <label className="block text-xs font-medium text-zinc-300 mb-2">
               Code TOTP (Authenticator)
             </label>
             <input
