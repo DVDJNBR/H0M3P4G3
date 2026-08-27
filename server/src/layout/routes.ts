@@ -2,15 +2,33 @@
 // document. PUT /api/layout validates against layoutSchema and persists
 // atomically (AD-2, AD-3, AD-10).
 import { Hono } from 'hono';
-import { layoutSchema } from '@h0m3p4g3/shared/schema';
+import { layoutSchema, type Layout } from '@h0m3p4g3/shared/schema';
+import { fetchAndStoreFavicon } from '../favicon/fetcher.js';
 import { StorageError, type LayoutStore } from '../storage/layout-store.js';
 
-export function createLayoutRoutes(store: LayoutStore): Hono {
+// Best-effort background fetch for every link's favicon (NFR4: never blocks
+// the response or fails the save -- fetchAndStoreFavicon already swallows
+// its own errors and skips domains already cached).
+function primeFavicons(dataDir: string, layout: Layout): void {
+  for (const column of layout.columns) {
+    for (const block of column.blocks) {
+      if (block.kind !== 'links') continue;
+      for (const link of block.links) {
+        if (link.faviconOverride) continue;
+        void fetchAndStoreFavicon(dataDir, link.url);
+      }
+    }
+  }
+}
+
+export function createLayoutRoutes(store: LayoutStore, dataDir?: string): Hono {
   const app = new Hono();
 
   app.get('/api/layout', async (c) => {
     try {
-      return c.json(await store.readLayout());
+      const layout = await store.readLayout();
+      if (dataDir) primeFavicons(dataDir, layout);
+      return c.json(layout);
     } catch (err) {
       if (err instanceof StorageError) {
         console.error(`[storage] ${err.message}`, err.cause ?? '');
@@ -59,6 +77,7 @@ export function createLayoutRoutes(store: LayoutStore): Hono {
 
     try {
       await store.writeLayout(parseResult.data);
+      if (dataDir) primeFavicons(dataDir, parseResult.data);
       return c.json(parseResult.data);
     } catch (err) {
       if (err instanceof StorageError) {

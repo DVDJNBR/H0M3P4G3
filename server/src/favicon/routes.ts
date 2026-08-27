@@ -16,9 +16,13 @@ export function createFaviconRoutes(dataDir: string): Hono {
       return c.body(bodyData);
     }
 
+    // Not cached client-side (unlike the branch above): the real favicon
+    // may finish its background fetch moments after this response, and a
+    // long-lived cache on this same URL would pin the client to the
+    // generic fallback for its whole max-age.
     const fallback = getFallbackFavicon();
     c.header('Content-Type', fallback.contentType);
-    c.header('Cache-Control', 'public, max-age=3600');
+    c.header('Cache-Control', 'no-store');
     return c.body(fallback.data);
   });
 

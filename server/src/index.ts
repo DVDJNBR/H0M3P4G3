@@ -49,7 +49,7 @@ export function createApp(deps: AppDeps): Hono {
   // session.
   app.use('/api/*', createAuthMiddleware(deps.authConfig.sessionSecret));
 
-  app.route('/', createLayoutRoutes(deps.layoutStore));
+  app.route('/', createLayoutRoutes(deps.layoutStore, deps.dataDir));
 
   if (deps.dataDir) {
     app.route('/', createRaindropRoutes(deps.dataDir));
