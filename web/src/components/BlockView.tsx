@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSortable, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { useSortable, SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { Block, Link } from '../types';
 import { useLayout } from '../context/LayoutContext';
@@ -21,6 +21,7 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
     addLink,
     updateRaindropBlock,
     setLinksBlockDisplayMode,
+    setLinksBlockIconStackDirection,
   } = useLayout();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(block.title);
@@ -34,10 +35,19 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
     disabled: !isEditorMode,
   });
 
+  const linkIds = block.kind === 'links' ? block.links.map((l) => l.id) : [];
+  const displayMode = block.kind === 'links' ? block.displayMode ?? 'iconAndText' : 'iconAndText';
+  const iconStackDirection = block.kind === 'links' ? block.iconStackDirection ?? 'vertical' : 'vertical';
+  // Mosaic width: a compact icon-only block stacked vertically is one
+  // narrow track; every other shape (icon+text, icons in a row, Raindrop)
+  // is two tracks wide -- see LayoutView's grid-template-columns.
+  const isCompact = displayMode === 'iconOnly' && iconStackDirection === 'vertical';
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
+    gridColumn: isCompact ? 'span 1' : 'span 2',
   };
 
   useEffect(() => {
@@ -67,9 +77,6 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
       deleteBlock(block.id);
     }
   };
-
-  const linkIds = block.kind === 'links' ? block.links.map((l) => l.id) : [];
-  const displayMode = block.kind === 'links' ? block.displayMode ?? 'iconAndText' : 'iconAndText';
 
   const isStale = raindropData?.fetchedAt
     ? Date.now() - new Date(raindropData.fetchedAt).getTime() > 20 * 60 * 1000
@@ -170,6 +177,36 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
                   </button>
                 </div>
               )}
+              {block.kind === 'links' && displayMode === 'iconOnly' && (
+                <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-0.5 mr-1">
+                  <button
+                    onClick={() => setLinksBlockIconStackDirection(block.id, 'vertical')}
+                    title="Empilement vertical"
+                    className={`flex items-center justify-center w-6 h-6 rounded-md transition-colors ${
+                      iconStackDirection === 'vertical'
+                        ? 'bg-zinc-700 text-zinc-100'
+                        : 'text-zinc-500 hover:text-zinc-300'
+                    }`}
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m-4-4l4 4 4-4" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setLinksBlockIconStackDirection(block.id, 'horizontal')}
+                    title="Empilement horizontal"
+                    className={`flex items-center justify-center w-6 h-6 rounded-md transition-colors ${
+                      iconStackDirection === 'horizontal'
+                        ? 'bg-zinc-700 text-zinc-100'
+                        : 'text-zinc-500 hover:text-zinc-300'
+                    }`}
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12h16m-4-4l4 4-4 4" />
+                    </svg>
+                  </button>
+                </div>
+              )}
               {block.kind === 'links' && (
                 <button
                   onClick={() => setShowAddLinkModal(true)}
@@ -217,8 +254,16 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
         </div>
 
         {block.kind === 'links' && (
-          <SortableContext items={linkIds} strategy={verticalListSortingStrategy}>
-            <div className="flex flex-col gap-1.5 min-h-[20px]">
+          <SortableContext items={linkIds} strategy={rectSortingStrategy}>
+            <div
+              className={`gap-1.5 min-h-[20px] ${
+                displayMode === 'iconOnly'
+                  ? iconStackDirection === 'horizontal'
+                    ? 'flex flex-row flex-wrap'
+                    : 'flex flex-col'
+                  : 'flex flex-col'
+              }`}
+            >
               {block.links.length === 0 ? (
                 <p className="text-xs text-zinc-600 italic py-2">
                   {isEditorMode ? 'Cliquez sur + pour ajouter un lien' : 'Aucun lien'}

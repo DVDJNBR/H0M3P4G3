@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useReducer, useEffect, useCallback, useState } from 'react';
-import type { Layout, Column, Block, Link, LinkDisplayMode } from '../types';
+import React, { createContext, useContext, useReducer, useEffect, useCallback, useState, useMemo } from 'react';
+import type { Layout, Block, Link, LinkDisplayMode, IconStackDirection } from '../types';
 import { fetchLayout, updateLayout, ApiError } from '../api/client';
 import { nanoid } from 'nanoid';
 
@@ -106,10 +106,10 @@ interface ContextValue extends State {
   loadLayout: () => Promise<void>;
   markAuthenticated: () => void;
   saveLayout: (newLayout: Layout) => Promise<void>;
-  addColumn: () => Promise<void>;
-  deleteColumn: (columnId: string) => Promise<void>;
+  /** All blocks across every column, in display order -- the layout has no visible column boundaries. */
+  blocks: Block[];
+  setBlocks: (newBlocks: Block[]) => Promise<void>;
   addBlock: (
-    columnId: string,
     blockConfig?: { kind?: 'links' | 'raindrop'; title?: string; collectionId?: string; displayCap?: number },
   ) => Promise<void>;
   updateRaindropBlock: (
@@ -118,6 +118,7 @@ interface ContextValue extends State {
   ) => Promise<void>;
   renameBlock: (blockId: string, newTitle: string) => Promise<void>;
   setLinksBlockDisplayMode: (blockId: string, displayMode: LinkDisplayMode) => Promise<void>;
+  setLinksBlockIconStackDirection: (blockId: string, direction: IconStackDirection) => Promise<void>;
   deleteBlock: (blockId: string) => Promise<void>;
   addLink: (blockId: string, url: string, title?: string, faviconOverride?: string) => Promise<void>;
   updateLinkDetails: (linkId: string, url: string, title: string, faviconOverride?: string) => Promise<void>;
@@ -176,34 +177,33 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     [state.layout],
   );
 
-  const addColumn = useCallback(async () => {
-    if (!state.layout) return;
-    const newCol: Column = {
-      id: nanoid(),
-      blocks: [],
-    };
-    const updated: Layout = {
-      columns: [...state.layout.columns, newCol],
-    };
-    await saveLayout(updated);
-  }, [state.layout, saveLayout]);
+  // The layout has no visible column boundaries (a single flowing mosaic),
+  // but the document still stores blocks under Columns (AD-10) so the
+  // multi-column UI can come back if the mosaic doesn't work out. Every
+  // mutation here normalizes to one column holding every block, in display
+  // order -- simplest possible source of truth for a flat, reorderable list.
+  const blocks = useMemo(
+    () => (state.layout ? state.layout.columns.flatMap((col) => col.blocks) : []),
+    [state.layout],
+  );
 
-  const deleteColumn = useCallback(
-    async (columnId: string) => {
+  const setBlocks = useCallback(
+    async (newBlocks: Block[]) => {
       if (!state.layout) return;
-      const updated: Layout = {
-        columns: state.layout.columns.filter((col) => col.id !== columnId),
-      };
+      const columnId = state.layout.columns[0]?.id ?? nanoid();
+      const updated: Layout = { columns: [{ id: columnId, blocks: newBlocks }] };
       await saveLayout(updated);
     },
     [state.layout, saveLayout],
   );
 
   const addBlock = useCallback(
-    async (
-      columnId: string,
-      blockConfig?: { kind?: 'links' | 'raindrop'; title?: string; collectionId?: string; displayCap?: number },
-    ) => {
+    async (blockConfig?: {
+      kind?: 'links' | 'raindrop';
+      title?: string;
+      collectionId?: string;
+      displayCap?: number;
+    }) => {
       if (!state.layout) return;
       const kind = blockConfig?.kind || 'links';
       let newBlock: Block;
@@ -223,14 +223,11 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           links: [],
         };
       }
-      const updated: Layout = {
-        columns: state.layout.columns.map((col) =>
-          col.id === columnId ? { ...col, blocks: [...col.blocks, newBlock] } : col,
-        ),
-      };
+      const columnId = state.layout.columns[0]?.id ?? nanoid();
+      const updated: Layout = { columns: [{ id: columnId, blocks: [...blocks, newBlock] }] };
       await saveLayout(updated);
     },
-    [state.layout, saveLayout],
+    [state.layout, blocks, saveLayout],
   );
 
   const updateRaindropBlock = useCallback(
@@ -282,6 +279,22 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           ...col,
           blocks: col.blocks.map((b) =>
             b.id === blockId && b.kind === 'links' ? { ...b, displayMode } : b,
+          ),
+        })),
+      };
+      await saveLayout(updated);
+    },
+    [state.layout, saveLayout],
+  );
+
+  const setLinksBlockIconStackDirection = useCallback(
+    async (blockId: string, direction: IconStackDirection) => {
+      if (!state.layout) return;
+      const updated: Layout = {
+        columns: state.layout.columns.map((col) => ({
+          ...col,
+          blocks: col.blocks.map((b) =>
+            b.id === blockId && b.kind === 'links' ? { ...b, iconStackDirection: direction } : b,
           ),
         })),
       };
@@ -411,12 +424,13 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         loadLayout,
         markAuthenticated,
         saveLayout,
-        addColumn,
-        deleteColumn,
+        blocks,
+        setBlocks,
         addBlock,
         updateRaindropBlock,
         renameBlock,
         setLinksBlockDisplayMode,
+        setLinksBlockIconStackDirection,
         deleteBlock,
         addLink,
         updateLinkDetails,
