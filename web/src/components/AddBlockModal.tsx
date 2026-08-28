@@ -2,12 +2,7 @@ import React, { useState } from 'react';
 
 interface AddBlockModalProps {
   isOpen: boolean;
-  onSave: (config: {
-    kind: 'links' | 'raindrop';
-    title: string;
-    collectionId?: string;
-    displayCap?: number;
-  }) => void;
+  onSave: (config: { kind: 'links' | 'raindrop'; collectionId?: string; displayCap?: number }) => void;
   onCancel: () => void;
 }
 
@@ -17,7 +12,6 @@ export const AddBlockModal: React.FC<AddBlockModalProps> = ({
   onCancel,
 }) => {
   const [kind, setKind] = useState<'links' | 'raindrop'>('links');
-  const [title, setTitle] = useState('');
   const [collectionId, setCollectionId] = useState('');
   const [displayCap, setDisplayCap] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -47,16 +41,12 @@ export const AddBlockModal: React.FC<AddBlockModalProps> = ({
       setError(null);
       onSave({
         kind: 'raindrop',
-        title: title.trim() || 'Raindrop',
         collectionId: trimmedCollectionId,
         displayCap: parsedCap,
       });
     } else {
       setError(null);
-      onSave({
-        kind: 'links',
-        title: title.trim() || 'Nouveau bloc',
-      });
+      onSave({ kind: 'links' });
     }
   };
 
@@ -111,20 +101,6 @@ export const AddBlockModal: React.FC<AddBlockModalProps> = ({
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-zinc-400 mb-1.5">
-              Titre du bloc
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder={kind === 'links' ? 'ex: Dev Tools, Médias' : 'ex: Articles, Films'}
-              className="w-full px-3.5 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-100 text-sm focus:outline-none focus:border-indigo-500"
-              autoFocus
-            />
-          </div>
-
           {kind === 'raindrop' && (
             <>
               <div>
@@ -136,6 +112,7 @@ export const AddBlockModal: React.FC<AddBlockModalProps> = ({
                   value={collectionId}
                   onChange={(e) => setCollectionId(e.target.value)}
                   placeholder="ex: 12345678"
+                  autoFocus
                   className="w-full px-3.5 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-100 text-sm focus:outline-none focus:border-indigo-500 font-mono"
                   required
                 />

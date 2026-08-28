@@ -51,6 +51,21 @@ export const LinkItem: React.FC<LinkItemProps> = ({ link, displayMode = 'iconAnd
     </svg>
   );
 
+  // Icon-only mode has no surrounding tile chrome, so the icon itself
+  // carries the weight -- render it noticeably larger than the icon+text row.
+  const largeIcon = iconUrl ? (
+    <img src={iconUrl} alt="" className="w-8 h-8 rounded object-contain" onError={() => setImgError(true)} />
+  ) : (
+    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.5}
+        d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+      />
+    </svg>
+  );
+
   const editControls = isEditorMode && (
     <>
       <button
@@ -82,9 +97,9 @@ export const LinkItem: React.FC<LinkItemProps> = ({ link, displayMode = 'iconAnd
           style={style}
           {...(isEditorMode ? attributes : {})}
           {...(isEditorMode ? listeners : {})}
-          className={`group relative flex items-center justify-center w-11 h-11 shrink-0 rounded-lg bg-zinc-900/40 hover:bg-zinc-800/60 border border-zinc-800/40 hover:border-zinc-700/60 transition-all text-zinc-300 hover:text-white ${
+          className={`group relative flex items-center justify-center w-14 h-14 shrink-0 rounded-lg text-zinc-300 hover:text-white hover:scale-110 transition-transform ${
             isEditorMode ? 'cursor-grab active:cursor-grabbing' : ''
-          } ${isDragging ? 'ring-2 ring-indigo-500/50 z-30' : ''}`}
+          } ${isDragging ? 'ring-2 ring-indigo-500/50 z-30 rounded-lg' : ''}`}
         >
           <a
             href={link.url}
@@ -94,11 +109,11 @@ export const LinkItem: React.FC<LinkItemProps> = ({ link, displayMode = 'iconAnd
             onClick={(e) => isEditorMode && e.preventDefault()}
             className="flex items-center justify-center w-full h-full"
           >
-            {icon}
+            {largeIcon}
           </a>
 
           {isEditorMode && (
-            <div className="absolute -top-2 -right-2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity bg-zinc-900 rounded-md border border-zinc-800 p-0.5">
+            <div className="absolute -top-1.5 -right-1.5 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity bg-zinc-900 rounded-md border border-zinc-800 p-0.5">
               {editControls}
             </div>
           )}

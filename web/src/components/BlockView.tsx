@@ -16,15 +16,12 @@ interface BlockViewProps {
 export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
   const {
     isEditorMode,
-    renameBlock,
     deleteBlock,
     addLink,
     updateRaindropBlock,
     setLinksBlockDisplayMode,
     setLinksBlockIconStackDirection,
   } = useLayout();
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [titleInput, setTitleInput] = useState(block.title);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [showAddLinkModal, setShowAddLinkModal] = useState(false);
   const [showEditRaindropModal, setShowEditRaindropModal] = useState(false);
@@ -62,14 +59,6 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
     }
   }, [block]);
 
-  const handleTitleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsEditingTitle(false);
-    if (titleInput.trim() !== block.title) {
-      renameBlock(block.id, titleInput.trim());
-    }
-  };
-
   const handleDeleteRequest = () => {
     if (block.kind === 'links' && block.links.length > 0) {
       setShowConfirmDelete(true);
@@ -81,6 +70,11 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
   const isStale = raindropData?.fetchedAt
     ? Date.now() - new Date(raindropData.fetchedAt).getTime() > 20 * 60 * 1000
     : false;
+
+  // No block titles: the block itself is just a lightweight visual grouping,
+  // named by nothing -- the header row only earns its place when there's
+  // something to show in it (editor controls, or a staleness notice).
+  const showHeader = isEditorMode || (block.kind === 'raindrop' && isStale);
 
   const raindropItems = raindropData?.items
     ? block.kind === 'raindrop' && block.displayCap
@@ -97,6 +91,7 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
           isDragging ? 'ring-2 ring-indigo-500/50 z-30' : ''
         }`}
       >
+        {showHeader && (
         <div className="flex items-center justify-between gap-2 border-b border-zinc-800/80 pb-2">
           <div className="flex items-center gap-2 flex-1 min-w-0">
             {isEditorMode && (
@@ -112,31 +107,10 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
               </div>
             )}
 
-            {isEditorMode && isEditingTitle ? (
-              <form onSubmit={handleTitleSubmit} className="flex-1">
-                <input
-                  type="text"
-                  value={titleInput}
-                  onChange={(e) => setTitleInput(e.target.value)}
-                  onBlur={handleTitleSubmit}
-                  autoFocus
-                  className="w-full bg-zinc-900 border border-indigo-500/50 rounded px-2 py-0.5 text-xs text-zinc-100 font-semibold focus:outline-none"
-                />
-              </form>
-            ) : (
-              <h3
-                onClick={() => isEditorMode && setIsEditingTitle(true)}
-                className={`text-xs font-semibold text-zinc-400 truncate flex items-center gap-2 ${
-                  isEditorMode ? 'cursor-pointer hover:text-zinc-200' : ''
-                }`}
-              >
-                <span>{block.title || 'Sans titre'}</span>
-                {block.kind === 'raindrop' && isStale && (
-                  <span className="text-[10px] text-amber-400 font-normal px-1.5 py-0.2 rounded bg-amber-500/10 border border-amber-500/20">
-                    Hors ligne / Obsolète
-                  </span>
-                )}
-              </h3>
+            {block.kind === 'raindrop' && isStale && (
+              <span className="text-[10px] text-amber-400 font-normal px-1.5 py-0.2 rounded bg-amber-500/10 border border-amber-500/20">
+                Hors ligne / Obsolète
+              </span>
             )}
           </div>
 
@@ -252,6 +226,7 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
             </div>
           )}
         </div>
+        )}
 
         {block.kind === 'links' && (
           <SortableContext items={linkIds} strategy={rectSortingStrategy}>
@@ -259,8 +234,8 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
               className={`gap-1.5 min-h-[20px] ${
                 displayMode === 'iconOnly'
                   ? iconStackDirection === 'horizontal'
-                    ? 'flex flex-row flex-wrap'
-                    : 'flex flex-col'
+                    ? 'flex flex-row flex-wrap justify-center'
+                    : 'flex flex-col items-center'
                   : 'flex flex-col'
               }`}
             >
@@ -331,13 +306,11 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
         <RaindropBlockModal
           isOpen={showEditRaindropModal}
           title="Configurer le bloc Raindrop"
-          initialTitle={block.title}
           initialCollectionId={block.collectionId}
           initialDisplayCap={block.displayCap}
-          onSave={(newTitle, newCollectionId, newDisplayCap) => {
+          onSave={(newCollectionId, newDisplayCap) => {
             setShowEditRaindropModal(false);
             updateRaindropBlock(block.id, {
-              title: newTitle,
               collectionId: newCollectionId,
               displayCap: newDisplayCap,
             });

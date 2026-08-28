@@ -30,7 +30,6 @@ export const iconStackDirectionSchema = z.enum(['vertical', 'horizontal']);
 export const linksBlockSchema = z.object({
   kind: z.literal('links'),
   id: z.string().min(1),
-  title: z.string(),
   links: z.array(linkSchema),
   displayMode: linkDisplayModeSchema.optional(),
   iconStackDirection: iconStackDirectionSchema.optional(),
@@ -39,7 +38,6 @@ export const linksBlockSchema = z.object({
 export const raindropBlockSchema = z.object({
   kind: z.literal('raindrop'),
   id: z.string().min(1),
-  title: z.string(),
   collectionId: z.string(),
   displayCap: z.number().int().positive().optional(),
 });

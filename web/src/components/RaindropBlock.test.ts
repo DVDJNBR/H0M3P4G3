@@ -6,7 +6,6 @@ describe('Raindrop Block Configuration & Slicing', () => {
     const block: RaindropBlock = {
       kind: 'raindrop',
       id: 'r-1',
-      title: 'Movies',
       collectionId: 'col-movies-100',
       displayCap: 3,
     };

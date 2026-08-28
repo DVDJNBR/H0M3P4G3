@@ -110,13 +110,12 @@ interface ContextValue extends State {
   blocks: Block[];
   setBlocks: (newBlocks: Block[]) => Promise<void>;
   addBlock: (
-    blockConfig?: { kind?: 'links' | 'raindrop'; title?: string; collectionId?: string; displayCap?: number },
+    blockConfig?: { kind?: 'links' | 'raindrop'; collectionId?: string; displayCap?: number },
   ) => Promise<void>;
   updateRaindropBlock: (
     blockId: string,
-    details: { title: string; collectionId: string; displayCap?: number },
+    details: { collectionId: string; displayCap?: number },
   ) => Promise<void>;
-  renameBlock: (blockId: string, newTitle: string) => Promise<void>;
   setLinksBlockDisplayMode: (blockId: string, displayMode: LinkDisplayMode) => Promise<void>;
   setLinksBlockIconStackDirection: (blockId: string, direction: IconStackDirection) => Promise<void>;
   deleteBlock: (blockId: string) => Promise<void>;
@@ -198,12 +197,7 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   );
 
   const addBlock = useCallback(
-    async (blockConfig?: {
-      kind?: 'links' | 'raindrop';
-      title?: string;
-      collectionId?: string;
-      displayCap?: number;
-    }) => {
+    async (blockConfig?: { kind?: 'links' | 'raindrop'; collectionId?: string; displayCap?: number }) => {
       if (!state.layout) return;
       const kind = blockConfig?.kind || 'links';
       let newBlock: Block;
@@ -211,7 +205,6 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         newBlock = {
           kind: 'raindrop',
           id: nanoid(),
-          title: blockConfig?.title?.trim() || 'Raindrop',
           collectionId: blockConfig?.collectionId?.trim() || '',
           displayCap: blockConfig?.displayCap,
         };
@@ -219,7 +212,6 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         newBlock = {
           kind: 'links',
           id: nanoid(),
-          title: blockConfig?.title?.trim() || 'Nouveau bloc',
           links: [],
         };
       }
@@ -231,10 +223,7 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   );
 
   const updateRaindropBlock = useCallback(
-    async (
-      blockId: string,
-      details: { title: string; collectionId: string; displayCap?: number },
-    ) => {
+    async (blockId: string, details: { collectionId: string; displayCap?: number }) => {
       if (!state.layout) return;
       const updated: Layout = {
         columns: state.layout.columns.map((col) => ({
@@ -243,27 +232,12 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             if (b.id === blockId && b.kind === 'raindrop') {
               return {
                 ...b,
-                title: details.title.trim(),
                 collectionId: details.collectionId.trim(),
                 displayCap: details.displayCap,
               };
             }
             return b;
           }),
-        })),
-      };
-      await saveLayout(updated);
-    },
-    [state.layout, saveLayout],
-  );
-
-  const renameBlock = useCallback(
-    async (blockId: string, newTitle: string) => {
-      if (!state.layout) return;
-      const updated: Layout = {
-        columns: state.layout.columns.map((col) => ({
-          ...col,
-          blocks: col.blocks.map((b) => (b.id === blockId ? { ...b, title: newTitle } : b)),
         })),
       };
       await saveLayout(updated);
@@ -428,7 +402,6 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setBlocks,
         addBlock,
         updateRaindropBlock,
-        renameBlock,
         setLinksBlockDisplayMode,
         setLinksBlockIconStackDirection,
         deleteBlock,

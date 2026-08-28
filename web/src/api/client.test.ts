@@ -18,12 +18,10 @@ describe('API Client', () => {
         columns: [
           {
             id: 'col-1',
-            title: 'Main',
             blocks: [
               {
                 kind: 'links' as const,
                 id: 'b-1',
-                title: 'Tech',
                 links: [{ id: 'l-1', title: 'GitHub', url: 'https://github.com' }],
               },
             ],

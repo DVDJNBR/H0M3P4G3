@@ -24,13 +24,11 @@ describe('layoutSchema', () => {
             {
               kind: 'links',
               id: 'blk-1',
-              title: 'Tools',
               links: [{ id: 'lnk-1', title: 'GitHub', url: 'https://github.com' }],
             },
             {
               kind: 'raindrop',
               id: 'blk-2',
-              title: 'Reading',
               collectionId: '12345',
               displayCap: 10,
             },
@@ -47,7 +45,6 @@ describe('blockSchema', () => {
     const valid = {
       kind: 'raindrop' as const,
       id: 'rd-1',
-      title: 'Medium Reads',
       collectionId: 'col-999',
       displayCap: 5,
     };
@@ -59,7 +56,6 @@ describe('blockSchema', () => {
       blockSchema.parse({
         kind: 'raindrop',
         id: 'rd-1',
-        title: 'Medium Reads',
         collectionId: 'col-999',
         displayCap: 0,
       }),

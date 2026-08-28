@@ -51,7 +51,6 @@ describe('GET /api/layout', () => {
             {
               kind: 'links' as const,
               id: 'b1',
-              title: 'Daily',
               links: [{ id: 'l1', title: 'Example', url: 'https://example.com' }],
             },
           ],
@@ -161,7 +160,6 @@ describe('PUT /api/layout', () => {
             {
               kind: 'links' as const,
               id: 'b-1',
-              title: 'Dev Links',
               links: [{ id: 'l-1', title: 'GitHub', url: 'https://github.com' }],
             },
           ],

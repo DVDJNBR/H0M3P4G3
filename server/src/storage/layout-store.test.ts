@@ -33,7 +33,6 @@ function sampleLayout(): Layout {
           {
             kind: 'links',
             id: 'blk-1',
-            title: 'Tools',
             links: [
               { id: 'lnk-1', title: 'GitHub', url: 'https://github.com' },
               {
@@ -47,7 +46,6 @@ function sampleLayout(): Layout {
           {
             kind: 'raindrop',
             id: 'blk-2',
-            title: 'Reading',
             collectionId: '12345',
             displayCap: 10,
           },

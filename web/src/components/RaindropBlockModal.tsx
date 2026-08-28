@@ -3,23 +3,20 @@ import React, { useState, useEffect } from 'react';
 interface RaindropBlockModalProps {
   isOpen: boolean;
   title: string;
-  initialTitle?: string;
   initialCollectionId?: string;
   initialDisplayCap?: number;
-  onSave: (title: string, collectionId: string, displayCap?: number) => void;
+  onSave: (collectionId: string, displayCap?: number) => void;
   onCancel: () => void;
 }
 
 export const RaindropBlockModal: React.FC<RaindropBlockModalProps> = ({
   isOpen,
   title: modalTitle,
-  initialTitle = '',
   initialCollectionId = '',
   initialDisplayCap,
   onSave,
   onCancel,
 }) => {
-  const [title, setTitle] = useState(initialTitle);
   const [collectionId, setCollectionId] = useState(initialCollectionId);
   const [displayCap, setDisplayCap] = useState<string>(
     initialDisplayCap ? String(initialDisplayCap) : '',
@@ -28,18 +25,16 @@ export const RaindropBlockModal: React.FC<RaindropBlockModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      setTitle(initialTitle);
       setCollectionId(initialCollectionId);
       setDisplayCap(initialDisplayCap ? String(initialDisplayCap) : '');
       setError(null);
     }
-  }, [isOpen, initialTitle, initialCollectionId, initialDisplayCap]);
+  }, [isOpen, initialCollectionId, initialDisplayCap]);
 
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmedTitle = title.trim() || 'Raindrop';
     const trimmedCollectionId = collectionId.trim();
 
     if (!trimmedCollectionId) {
@@ -58,7 +53,7 @@ export const RaindropBlockModal: React.FC<RaindropBlockModalProps> = ({
     }
 
     setError(null);
-    onSave(trimmedTitle, trimmedCollectionId, parsedCap);
+    onSave(trimmedCollectionId, parsedCap);
   };
 
   return (
@@ -75,20 +70,6 @@ export const RaindropBlockModal: React.FC<RaindropBlockModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-medium text-zinc-400 mb-1.5">
-              Titre du bloc
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="ex: Articles Medium, Films, Séries"
-              className="w-full px-3.5 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-100 text-sm focus:outline-none focus:border-indigo-500"
-              autoFocus
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-zinc-400 mb-1.5">
               ID de collection Raindrop
             </label>
             <input
@@ -97,6 +78,7 @@ export const RaindropBlockModal: React.FC<RaindropBlockModalProps> = ({
               onChange={(e) => setCollectionId(e.target.value)}
               placeholder="ex: 12345678"
               className="w-full px-3.5 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-100 text-sm focus:outline-none focus:border-indigo-500 font-mono"
+              autoFocus
               required
             />
             <p className="text-[11px] text-zinc-500 mt-1">
