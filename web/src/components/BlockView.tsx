@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSortable, SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { Block, Link } from '../types';
@@ -26,6 +26,19 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
   const [showAddLinkModal, setShowAddLinkModal] = useState(false);
   const [showEditRaindropModal, setShowEditRaindropModal] = useState(false);
   const [raindropData, setRaindropData] = useState<RaindropCacheMap[string] | null>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
+  // Default anchor is the block's right edge (grows left, see className
+  // below) -- safe for every block except one narrow enough, near enough
+  // to the viewport's left edge, that the toolbar's own width pushes past
+  // it. Checked on hover, when the toolbar's real (already-rendered but
+  // invisible) position is measurable, and flipped to the left edge
+  // (grows right) only then.
+  const [anchorLeft, setAnchorLeft] = useState(false);
+
+  const handleMouseEnter = () => {
+    const rect = toolbarRef.current?.getBoundingClientRect();
+    if (rect) setAnchorLeft(rect.left < 8);
+  };
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: block.id,
@@ -82,36 +95,42 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
       <div
         ref={setNodeRef}
         style={style}
+        onMouseEnter={handleMouseEnter}
         className={`glass-panel glass-panel-hover rounded-xl p-4 flex flex-col gap-3 group relative ${
           isDragging ? 'ring-2 ring-indigo-500/50 z-30' : ''
         }`}
       >
         {isEditorMode && (
-          <div className="absolute -top-3 right-0 z-20 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity">
-            <div className="flex items-center gap-1 glass-panel rounded-lg shadow-lg p-1">
+          <div
+            ref={toolbarRef}
+            className={`absolute -top-3 z-20 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity ${
+              anchorLeft ? 'left-0' : 'right-0'
+            }`}
+          >
+            <div className="flex items-center gap-0.5 glass-panel rounded-lg shadow-lg p-1">
               <div
                 {...attributes}
                 {...listeners}
                 className="cursor-grab active:cursor-grabbing text-zinc-500 hover:text-zinc-200 p-1"
                 title="Glisser pour déplacer le bloc"
               >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
                 </svg>
               </div>
 
               {block.kind === 'links' && (
-                <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-0.5">
+                <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-md p-0.5">
                   <button
                     onClick={() => setLinksBlockDisplayMode(block.id, 'iconOnly')}
                     title="Icône seule"
-                    className={`flex items-center justify-center w-6 h-6 rounded-md transition-colors ${
+                    className={`flex items-center justify-center w-5 h-5 rounded transition-colors ${
                       displayMode === 'iconOnly'
                         ? 'bg-zinc-700 text-zinc-100'
                         : 'text-zinc-500 hover:text-zinc-300'
                     }`}
                   >
-                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -123,43 +142,43 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
                   <button
                     onClick={() => setLinksBlockDisplayMode(block.id, 'iconAndText')}
                     title="Icône et nom"
-                    className={`flex items-center justify-center w-6 h-6 rounded-md transition-colors ${
+                    className={`flex items-center justify-center w-5 h-5 rounded transition-colors ${
                       displayMode === 'iconAndText'
                         ? 'bg-zinc-700 text-zinc-100'
                         : 'text-zinc-500 hover:text-zinc-300'
                     }`}
                   >
-                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h10" />
                     </svg>
                   </button>
                 </div>
               )}
               {block.kind === 'links' && displayMode === 'iconOnly' && (
-                <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-0.5">
+                <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-md p-0.5">
                   <button
                     onClick={() => setLinksBlockIconStackDirection(block.id, 'vertical')}
                     title="Empilement vertical"
-                    className={`flex items-center justify-center w-6 h-6 rounded-md transition-colors ${
+                    className={`flex items-center justify-center w-5 h-5 rounded transition-colors ${
                       iconStackDirection === 'vertical'
                         ? 'bg-zinc-700 text-zinc-100'
                         : 'text-zinc-500 hover:text-zinc-300'
                     }`}
                   >
-                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m-4-4l4 4 4-4" />
                     </svg>
                   </button>
                   <button
                     onClick={() => setLinksBlockIconStackDirection(block.id, 'horizontal')}
                     title="Empilement horizontal"
-                    className={`flex items-center justify-center w-6 h-6 rounded-md transition-colors ${
+                    className={`flex items-center justify-center w-5 h-5 rounded transition-colors ${
                       iconStackDirection === 'horizontal'
                         ? 'bg-zinc-700 text-zinc-100'
                         : 'text-zinc-500 hover:text-zinc-300'
                     }`}
                   >
-                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12h16m-4-4l4 4-4 4" />
                     </svg>
                   </button>
@@ -171,7 +190,7 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
                   className="text-zinc-500 hover:text-indigo-400 p-1 transition-colors"
                   title="Ajouter un lien"
                 >
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
                 </button>
@@ -182,7 +201,7 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
                   className="text-zinc-500 hover:text-indigo-400 p-1 transition-colors"
                   title="Configurer la collection Raindrop"
                 >
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -203,7 +222,7 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
                 className="text-zinc-500 hover:text-red-400 p-1 transition-colors"
                 title="Supprimer le bloc"
               >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
               </button>
