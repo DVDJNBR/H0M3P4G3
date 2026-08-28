@@ -253,7 +253,12 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
                 </p>
               ) : (
                 block.links.map((link: Link) => (
-                  <LinkItem key={link.id} link={link} displayMode={displayMode} />
+                  <LinkItem
+                    key={link.id}
+                    link={link}
+                    displayMode={displayMode}
+                    iconStackDirection={iconStackDirection}
+                  />
                 ))
               )}
             </div>
@@ -303,9 +308,9 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
       <LinkModal
         isOpen={showAddLinkModal}
         title="Ajouter un lien"
-        onSave={(url, title, faviconOverride) => {
+        onSave={(details) => {
           setShowAddLinkModal(false);
-          addLink(block.id, url, title, faviconOverride);
+          addLink(block.id, details);
         }}
         onCancel={() => setShowAddLinkModal(false)}
       />

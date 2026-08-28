@@ -16,6 +16,13 @@ export const linkSchema = z.object({
   title: z.string(),
   url: httpUrlSchema,
   faviconOverride: httpUrlSchema.optional(),
+  // A second URL (e.g. the GitHub repo for a deployed site) rendered as a
+  // small icon appended after the primary one -- its own separate link.
+  secondaryUrl: httpUrlSchema.optional(),
+  // Replaces the favicon with a live up/degraded/down status dot (checked
+  // server-side via /api/link-status -- CORS makes a client-side fetch
+  // unreliable for arbitrary third-party origins).
+  showStatusDot: z.boolean().optional(),
 });
 
 // Optional, defaults to 'iconAndText' when absent so existing stored

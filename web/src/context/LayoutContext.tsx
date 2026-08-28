@@ -119,9 +119,17 @@ interface ContextValue extends State {
   setLinksBlockDisplayMode: (blockId: string, displayMode: LinkDisplayMode) => Promise<void>;
   setLinksBlockIconStackDirection: (blockId: string, direction: IconStackDirection) => Promise<void>;
   deleteBlock: (blockId: string) => Promise<void>;
-  addLink: (blockId: string, url: string, title?: string, faviconOverride?: string) => Promise<void>;
-  updateLinkDetails: (linkId: string, url: string, title: string, faviconOverride?: string) => Promise<void>;
+  addLink: (blockId: string, details: LinkDetailsInput) => Promise<void>;
+  updateLinkDetails: (linkId: string, details: LinkDetailsInput) => Promise<void>;
   deleteLink: (linkId: string) => Promise<void>;
+}
+
+export interface LinkDetailsInput {
+  url: string;
+  title?: string;
+  faviconOverride?: string;
+  secondaryUrl?: string;
+  showStatusDot?: boolean;
 }
 
 const LayoutContext = createContext<ContextValue | undefined>(undefined);
@@ -292,22 +300,24 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   );
 
   const addLink = useCallback(
-    async (blockId: string, url: string, title?: string, faviconOverride?: string) => {
+    async (blockId: string, details: LinkDetailsInput) => {
       if (!state.layout) return;
-      let finalTitle = title?.trim();
+      let finalTitle = details.title?.trim();
       if (!finalTitle) {
         try {
-          finalTitle = new URL(url).hostname.replace(/^www\./, '');
+          finalTitle = new URL(details.url).hostname.replace(/^www\./, '');
         } catch {
-          finalTitle = url;
+          finalTitle = details.url;
         }
       }
 
       const newLink: Link = {
         id: nanoid(),
-        url: url.trim(),
+        url: details.url.trim(),
         title: finalTitle,
-        faviconOverride: faviconOverride?.trim() || undefined,
+        faviconOverride: details.faviconOverride?.trim() || undefined,
+        secondaryUrl: details.secondaryUrl?.trim() || undefined,
+        showStatusDot: details.showStatusDot || undefined,
       };
 
       const updated: Layout = {
@@ -327,14 +337,14 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   );
 
   const updateLinkDetails = useCallback(
-    async (linkId: string, url: string, title: string, faviconOverride?: string) => {
+    async (linkId: string, details: LinkDetailsInput) => {
       if (!state.layout) return;
-      let finalTitle = title.trim();
+      let finalTitle = details.title?.trim();
       if (!finalTitle) {
         try {
-          finalTitle = new URL(url).hostname.replace(/^www\./, '');
+          finalTitle = new URL(details.url).hostname.replace(/^www\./, '');
         } catch {
-          finalTitle = url;
+          finalTitle = details.url;
         }
       }
 
@@ -349,9 +359,11 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                   l.id === linkId
                     ? {
                         ...l,
-                        url: url.trim(),
+                        url: details.url.trim(),
                         title: finalTitle,
-                        faviconOverride: faviconOverride?.trim() || undefined,
+                        faviconOverride: details.faviconOverride?.trim() || undefined,
+                        secondaryUrl: details.secondaryUrl?.trim() || undefined,
+                        showStatusDot: details.showStatusDot || undefined,
                       }
                     : l,
                 ),

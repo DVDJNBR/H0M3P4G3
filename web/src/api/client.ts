@@ -110,6 +110,21 @@ async function fetchRaindropCacheFromServer(): Promise<RaindropCacheMap> {
   }
 }
 
+export type LinkStatusBucket = 'up' | 'degraded' | 'down';
+
+export async function fetchLinkStatus(url: string): Promise<LinkStatusBucket> {
+  try {
+    const res = await fetch(`/api/link-status?url=${encodeURIComponent(url)}`, {
+      headers: { Accept: 'application/json' },
+    });
+    if (!res.ok) return 'down';
+    const data = (await res.json()) as { status: LinkStatusBucket };
+    return data.status;
+  } catch {
+    return 'down';
+  }
+}
+
 export async function login(password: string, totp: string): Promise<void> {
   const res = await fetch('/api/login', {
     method: 'POST',
