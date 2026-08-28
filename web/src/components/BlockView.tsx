@@ -71,11 +71,6 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
     ? Date.now() - new Date(raindropData.fetchedAt).getTime() > 20 * 60 * 1000
     : false;
 
-  // No block titles: the block itself is just a lightweight visual grouping,
-  // named by nothing -- the header row only earns its place when there's
-  // something to show in it (editor controls, or a staleness notice).
-  const showHeader = isEditorMode || (block.kind === 'raindrop' && isStale);
-
   const raindropItems = raindropData?.items
     ? block.kind === 'raindrop' && block.displayCap
       ? raindropData.items.slice(0, block.displayCap)
@@ -91,33 +86,22 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
           isDragging ? 'ring-2 ring-indigo-500/50 z-30' : ''
         }`}
       >
-        {showHeader && (
-        <div className="flex items-center justify-between gap-2 border-b border-zinc-800/80 pb-2">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            {isEditorMode && (
+        {isEditorMode && (
+          <div className="absolute -top-3 right-0 z-20 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity">
+            <div className="flex items-center gap-1 glass-panel rounded-lg shadow-lg p-1">
               <div
                 {...attributes}
                 {...listeners}
-                className="cursor-grab active:cursor-grabbing text-zinc-600 hover:text-zinc-300 p-0.5"
+                className="cursor-grab active:cursor-grabbing text-zinc-500 hover:text-zinc-200 p-1"
                 title="Glisser pour déplacer le bloc"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
                 </svg>
               </div>
-            )}
 
-            {block.kind === 'raindrop' && isStale && (
-              <span className="text-[10px] text-amber-400 font-normal px-1.5 py-0.2 rounded bg-amber-500/10 border border-amber-500/20">
-                Hors ligne / Obsolète
-              </span>
-            )}
-          </div>
-
-          {isEditorMode && (
-            <div className="flex items-center gap-1">
               {block.kind === 'links' && (
-                <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-0.5 mr-1">
+                <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-0.5">
                   <button
                     onClick={() => setLinksBlockDisplayMode(block.id, 'iconOnly')}
                     title="Icône seule"
@@ -152,7 +136,7 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
                 </div>
               )}
               {block.kind === 'links' && displayMode === 'iconOnly' && (
-                <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-0.5 mr-1">
+                <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-0.5">
                   <button
                     onClick={() => setLinksBlockIconStackDirection(block.id, 'vertical')}
                     title="Empilement vertical"
@@ -224,8 +208,13 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
                 </svg>
               </button>
             </div>
-          )}
-        </div>
+          </div>
+        )}
+
+        {block.kind === 'raindrop' && isStale && (
+          <span className="self-start text-[10px] text-amber-400 font-normal px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
+            Hors ligne / Obsolète
+          </span>
         )}
 
         {block.kind === 'links' && (
