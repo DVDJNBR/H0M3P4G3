@@ -25,7 +25,7 @@ const STATUS_DOT_LABEL: Record<LinkStatusBucket, string> = {
   down: 'Hors ligne ou injoignable',
 };
 
-function StatusDot({ url, size }: { url: string; size: 'sm' | 'lg' }) {
+function StatusDot({ url, size }: { url: string; size: 'badge' | 'lg' }) {
   const [bucket, setBucket] = useState<LinkStatusBucket | null>(null);
 
   useEffect(() => {
@@ -39,11 +39,11 @@ function StatusDot({ url, size }: { url: string; size: 'sm' | 'lg' }) {
     };
   }, [url]);
 
-  const dim = size === 'lg' ? 'w-3.5 h-3.5' : 'w-2.5 h-2.5';
+  const dim = size === 'lg' ? 'w-3 h-3' : 'w-2 h-2';
   return (
     <span
       title={bucket ? STATUS_DOT_LABEL[bucket] : 'Vérification en cours...'}
-      className={`block rounded-full shrink-0 ${dim} ${
+      className={`block rounded-full shrink-0 ring-2 ring-zinc-950 ${dim} ${
         bucket ? STATUS_DOT_COLOR[bucket] : 'bg-zinc-600 animate-pulse'
       }`}
     />
@@ -150,9 +150,6 @@ export const LinkItem: React.FC<LinkItemProps> = ({
     </svg>
   );
 
-  const primaryContent = link.showStatusDot ? <StatusDot url={link.url} size="sm" /> : icon;
-  const primaryContentLarge = link.showStatusDot ? <StatusDot url={link.url} size="lg" /> : largeIcon;
-
   const editControls = isEditorMode && (
     <>
       <button
@@ -222,9 +219,14 @@ export const LinkItem: React.FC<LinkItemProps> = ({
             rel="noopener noreferrer"
             title={link.title || link.url}
             onClick={(e) => isEditorMode && e.preventDefault()}
-            className="flex items-center justify-center w-14 h-14 shrink-0"
+            className="relative flex items-center justify-center w-14 h-14 shrink-0"
           >
-            {primaryContentLarge}
+            {largeIcon}
+            {link.showStatusDot && (
+              <span className="absolute bottom-1 right-1">
+                <StatusDot url={link.url} size="lg" />
+              </span>
+            )}
           </a>
 
           {link.secondaryUrl && <SecondaryIcon url={link.secondaryUrl} size="lg" />}
@@ -270,8 +272,13 @@ export const LinkItem: React.FC<LinkItemProps> = ({
             </div>
           )}
 
-          <div className="w-5 h-5 rounded flex items-center justify-center shrink-0 bg-zinc-800 text-zinc-400 group-hover:text-indigo-400 group-hover:bg-zinc-700/50 transition-colors overflow-hidden">
-            {primaryContent}
+          <div className="relative w-5 h-5 rounded flex items-center justify-center shrink-0 bg-zinc-800 text-zinc-400 group-hover:text-indigo-400 group-hover:bg-zinc-700/50 transition-colors">
+            {icon}
+            {link.showStatusDot && (
+              <span className="absolute -bottom-0.5 -right-0.5">
+                <StatusDot url={link.url} size="badge" />
+              </span>
+            )}
           </div>
           <span className="truncate font-medium">{link.title || link.url}</span>
         </a>
