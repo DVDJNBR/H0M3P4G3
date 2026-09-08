@@ -19,6 +19,51 @@ type Action =
 
 const CACHED_LAYOUT_KEY = 'h0m3p4g3:cachedLayout';
 
+// Starter content for a new HTML block: a status-dot dashboard using the
+// same /api/link-status endpoint the built-in status dot uses. Edit the
+// SITES array (in the block's own editor) and add/remove entries -- the
+// dots start empty and only resolve after the page itself has finished
+// loading (NFR: never delay first paint for a status check).
+const DEFAULT_HTML_BLOCK_CONTENT = `<style>
+  body { margin: 0; font: 13px -apple-system, BlinkMacSystemFont, sans-serif; color: #f5f5f7; background: transparent; }
+  .row { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: #48484a; flex-shrink: 0; transition: background-color .3s; }
+  .dot.up { background: #34c759; }
+  .dot.degraded { background: #ff9f0a; }
+  .dot.down { background: #ff453a; }
+  a { color: inherit; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+</style>
+<div id="sites"></div>
+<script>
+  // Edit this list: label = what you see, url = what gets checked.
+  const SITES = [
+    { label: 'H0M3P4G3', url: 'https://h0m3p4g3.dvdjnbr.fr' },
+  ];
+
+  const container = document.getElementById('sites');
+  SITES.forEach((site, i) => {
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = '<span class="dot" id="dot-' + i + '"></span><a href="' + site.url + '" target="_blank" rel="noopener noreferrer">' + site.label + '</a>';
+    container.appendChild(row);
+  });
+
+  window.addEventListener('load', () => {
+    SITES.forEach((site, i) => {
+      fetch('/api/link-status?url=' + encodeURIComponent(site.url))
+        .then((r) => r.json())
+        .then((data) => {
+          document.getElementById('dot-' + i).classList.add(data.status);
+        })
+        .catch(() => {
+          document.getElementById('dot-' + i).classList.add('down');
+        });
+    });
+  });
+</script>
+`;
+
 function readCachedLayout(): Layout | null {
   try {
     const raw = localStorage.getItem(CACHED_LAYOUT_KEY);
@@ -110,18 +155,31 @@ interface ContextValue extends State {
   blocks: Block[];
   setBlocks: (newBlocks: Block[]) => Promise<void>;
   addBlock: (
-    blockConfig?: { kind?: 'links' | 'raindrop'; collectionId?: string; displayCap?: number },
+    blockConfig?: {
+      kind?: 'links' | 'raindrop' | 'html';
+      collectionId?: string;
+      displayCap?: number;
+    },
   ) => Promise<void>;
   updateRaindropBlock: (
     blockId: string,
     details: { collectionId: string; displayCap?: number },
   ) => Promise<void>;
+  updateHtmlBlockContent: (blockId: string, content: string) => Promise<void>;
   setLinksBlockDisplayMode: (blockId: string, displayMode: LinkDisplayMode) => Promise<void>;
   setLinksBlockIconStackDirection: (blockId: string, direction: IconStackDirection) => Promise<void>;
   deleteBlock: (blockId: string) => Promise<void>;
-  addLink: (blockId: string, url: string, title?: string, faviconOverride?: string) => Promise<void>;
-  updateLinkDetails: (linkId: string, url: string, title: string, faviconOverride?: string) => Promise<void>;
+  addLink: (blockId: string, details: LinkDetailsInput) => Promise<void>;
+  updateLinkDetails: (linkId: string, details: LinkDetailsInput) => Promise<void>;
   deleteLink: (linkId: string) => Promise<void>;
+}
+
+export interface LinkDetailsInput {
+  url: string;
+  title?: string;
+  faviconOverride?: string;
+  secondaryUrl?: string;
+  showStatusDot?: boolean;
 }
 
 const LayoutContext = createContext<ContextValue | undefined>(undefined);
@@ -197,7 +255,11 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   );
 
   const addBlock = useCallback(
-    async (blockConfig?: { kind?: 'links' | 'raindrop'; collectionId?: string; displayCap?: number }) => {
+    async (blockConfig?: {
+      kind?: 'links' | 'raindrop' | 'html';
+      collectionId?: string;
+      displayCap?: number;
+    }) => {
       if (!state.layout) return;
       const kind = blockConfig?.kind || 'links';
       let newBlock: Block;
@@ -207,6 +269,12 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           id: nanoid(),
           collectionId: blockConfig?.collectionId?.trim() || '',
           displayCap: blockConfig?.displayCap,
+        };
+      } else if (kind === 'html') {
+        newBlock = {
+          kind: 'html',
+          id: nanoid(),
+          content: DEFAULT_HTML_BLOCK_CONTENT,
         };
       } else {
         newBlock = {
@@ -238,6 +306,22 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             }
             return b;
           }),
+        })),
+      };
+      await saveLayout(updated);
+    },
+    [state.layout, saveLayout],
+  );
+
+  const updateHtmlBlockContent = useCallback(
+    async (blockId: string, content: string) => {
+      if (!state.layout) return;
+      const updated: Layout = {
+        columns: state.layout.columns.map((col) => ({
+          ...col,
+          blocks: col.blocks.map((b) =>
+            b.id === blockId && b.kind === 'html' ? { ...b, content } : b,
+          ),
         })),
       };
       await saveLayout(updated);
@@ -292,22 +376,24 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   );
 
   const addLink = useCallback(
-    async (blockId: string, url: string, title?: string, faviconOverride?: string) => {
+    async (blockId: string, details: LinkDetailsInput) => {
       if (!state.layout) return;
-      let finalTitle = title?.trim();
+      let finalTitle = details.title?.trim();
       if (!finalTitle) {
         try {
-          finalTitle = new URL(url).hostname.replace(/^www\./, '');
+          finalTitle = new URL(details.url).hostname.replace(/^www\./, '');
         } catch {
-          finalTitle = url;
+          finalTitle = details.url;
         }
       }
 
       const newLink: Link = {
         id: nanoid(),
-        url: url.trim(),
+        url: details.url.trim(),
         title: finalTitle,
-        faviconOverride: faviconOverride?.trim() || undefined,
+        faviconOverride: details.faviconOverride?.trim() || undefined,
+        secondaryUrl: details.secondaryUrl?.trim() || undefined,
+        showStatusDot: details.showStatusDot || undefined,
       };
 
       const updated: Layout = {
@@ -327,14 +413,14 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   );
 
   const updateLinkDetails = useCallback(
-    async (linkId: string, url: string, title: string, faviconOverride?: string) => {
+    async (linkId: string, details: LinkDetailsInput) => {
       if (!state.layout) return;
-      let finalTitle = title.trim();
+      let finalTitle = details.title?.trim();
       if (!finalTitle) {
         try {
-          finalTitle = new URL(url).hostname.replace(/^www\./, '');
+          finalTitle = new URL(details.url).hostname.replace(/^www\./, '');
         } catch {
-          finalTitle = url;
+          finalTitle = details.url;
         }
       }
 
@@ -349,9 +435,11 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                   l.id === linkId
                     ? {
                         ...l,
-                        url: url.trim(),
+                        url: details.url.trim(),
                         title: finalTitle,
-                        faviconOverride: faviconOverride?.trim() || undefined,
+                        faviconOverride: details.faviconOverride?.trim() || undefined,
+                        secondaryUrl: details.secondaryUrl?.trim() || undefined,
+                        showStatusDot: details.showStatusDot || undefined,
                       }
                     : l,
                 ),
@@ -402,6 +490,7 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setBlocks,
         addBlock,
         updateRaindropBlock,
+        updateHtmlBlockContent,
         setLinksBlockDisplayMode,
         setLinksBlockIconStackDirection,
         deleteBlock,

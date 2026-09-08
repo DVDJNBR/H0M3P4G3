@@ -16,6 +16,13 @@ export const linkSchema = z.object({
   title: z.string(),
   url: httpUrlSchema,
   faviconOverride: httpUrlSchema.optional(),
+  // A second URL (e.g. the GitHub repo for a deployed site) rendered as a
+  // small icon appended after the primary one -- its own separate link.
+  secondaryUrl: httpUrlSchema.optional(),
+  // Replaces the favicon with a live up/degraded/down status dot (checked
+  // server-side via /api/link-status -- CORS makes a client-side fetch
+  // unreliable for arbitrary third-party origins).
+  showStatusDot: z.boolean().optional(),
 });
 
 // Optional, defaults to 'iconAndText' when absent so existing stored
@@ -42,10 +49,21 @@ export const raindropBlockSchema = z.object({
   displayCap: z.number().int().positive().optional(),
 });
 
+// Personal custom-widget escape hatch: arbitrary HTML+JS, stored as data
+// (not hardcoded in the app) and rendered in a sandboxed iframe. Trust
+// model: single-user personal site, content only the owner ever writes --
+// same tradeoff already made for the app's own auth/session design.
+export const htmlBlockSchema = z.object({
+  kind: z.literal('html'),
+  id: z.string().min(1),
+  content: z.string(),
+});
+
 // Discriminated on `kind` — the Epic 2/3 forward contract.
 export const blockSchema = z.discriminatedUnion('kind', [
   linksBlockSchema,
   raindropBlockSchema,
+  htmlBlockSchema,
 ]);
 
 export const columnSchema = z.object({
@@ -62,6 +80,7 @@ export type LinkDisplayMode = z.infer<typeof linkDisplayModeSchema>;
 export type IconStackDirection = z.infer<typeof iconStackDirectionSchema>;
 export type LinksBlock = z.infer<typeof linksBlockSchema>;
 export type RaindropBlock = z.infer<typeof raindropBlockSchema>;
+export type HtmlBlock = z.infer<typeof htmlBlockSchema>;
 export type Block = z.infer<typeof blockSchema>;
 export type Column = z.infer<typeof columnSchema>;
 export type Layout = z.infer<typeof layoutSchema>;

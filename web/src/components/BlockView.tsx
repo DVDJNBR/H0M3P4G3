@@ -7,6 +7,8 @@ import { LinkItem } from './LinkItem';
 import { ConfirmModal } from './ConfirmModal';
 import { LinkModal } from './LinkModal';
 import { RaindropBlockModal } from './RaindropBlockModal';
+import { HtmlBlockModal } from './HtmlBlockModal';
+import { HtmlBlockView } from './HtmlBlockView';
 import { fetchRaindropCache, type RaindropCacheMap } from '../api/client';
 
 interface BlockViewProps {
@@ -19,12 +21,14 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
     deleteBlock,
     addLink,
     updateRaindropBlock,
+    updateHtmlBlockContent,
     setLinksBlockDisplayMode,
     setLinksBlockIconStackDirection,
   } = useLayout();
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [showAddLinkModal, setShowAddLinkModal] = useState(false);
   const [showEditRaindropModal, setShowEditRaindropModal] = useState(false);
+  const [showEditHtmlModal, setShowEditHtmlModal] = useState(false);
   const [raindropData, setRaindropData] = useState<RaindropCacheMap[string] | null>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
   // Default anchor is the block's right edge (grows left, see className
@@ -217,6 +221,22 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
                   </svg>
                 </button>
               )}
+              {block.kind === 'html' && (
+                <button
+                  onClick={() => setShowEditHtmlModal(true)}
+                  className="text-zinc-500 hover:text-indigo-400 p-1 transition-colors"
+                  title="Éditer le HTML"
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.3H3v-3.572L16.732 3.732z"
+                    />
+                  </svg>
+                </button>
+              )}
               <button
                 onClick={handleDeleteRequest}
                 className="text-zinc-500 hover:text-red-400 p-1 transition-colors"
@@ -253,7 +273,12 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
                 </p>
               ) : (
                 block.links.map((link: Link) => (
-                  <LinkItem key={link.id} link={link} displayMode={displayMode} />
+                  <LinkItem
+                    key={link.id}
+                    link={link}
+                    displayMode={displayMode}
+                    iconStackDirection={iconStackDirection}
+                  />
                 ))
               )}
             </div>
@@ -287,6 +312,8 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
             )}
           </div>
         )}
+
+        {block.kind === 'html' && <HtmlBlockView content={block.content} />}
       </div>
 
       <ConfirmModal
@@ -303,9 +330,9 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
       <LinkModal
         isOpen={showAddLinkModal}
         title="Ajouter un lien"
-        onSave={(url, title, faviconOverride) => {
+        onSave={(details) => {
           setShowAddLinkModal(false);
-          addLink(block.id, url, title, faviconOverride);
+          addLink(block.id, details);
         }}
         onCancel={() => setShowAddLinkModal(false)}
       />
@@ -324,6 +351,19 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
             });
           }}
           onCancel={() => setShowEditRaindropModal(false)}
+        />
+      )}
+
+      {block.kind === 'html' && (
+        <HtmlBlockModal
+          isOpen={showEditHtmlModal}
+          title="Éditer le bloc HTML"
+          initialContent={block.content}
+          onSave={(content) => {
+            setShowEditHtmlModal(false);
+            updateHtmlBlockContent(block.id, content);
+          }}
+          onCancel={() => setShowEditHtmlModal(false)}
         />
       )}
     </>

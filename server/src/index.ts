@@ -10,6 +10,7 @@ import { createAuthRoutes, type LoginConfig } from './auth/routes.js';
 import { loadConfig, type Config } from './config.js';
 import { createFaviconRoutes } from './favicon/routes.js';
 import { createLayoutRoutes } from './layout/routes.js';
+import { createLinkStatusRoutes } from './linkStatus/routes.js';
 import { createRaindropRoutes } from './raindrop/routes.js';
 import { startRaindropPoller } from './raindrop/poller.js';
 import { initLayoutStore, type LayoutStore } from './storage/layout-store.js';
@@ -50,6 +51,7 @@ export function createApp(deps: AppDeps): Hono {
   app.use('/api/*', createAuthMiddleware(deps.authConfig.sessionSecret));
 
   app.route('/', createLayoutRoutes(deps.layoutStore, deps.dataDir));
+  app.route('/', createLinkStatusRoutes());
 
   if (deps.dataDir) {
     app.route('/', createRaindropRoutes(deps.dataDir));

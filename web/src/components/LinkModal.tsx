@@ -1,13 +1,27 @@
 import React, { useState, useEffect } from 'react';
 
+export interface LinkModalSavedDetails {
+  url: string;
+  title: string;
+  faviconOverride?: string;
+  secondaryUrl?: string;
+  showStatusDot: boolean;
+}
+
 interface LinkModalProps {
   isOpen: boolean;
   title: string;
   initialUrl?: string;
   initialTitle?: string;
   initialFaviconOverride?: string;
-  onSave: (url: string, title: string, faviconOverride?: string) => void;
+  initialSecondaryUrl?: string;
+  initialShowStatusDot?: boolean;
+  onSave: (details: LinkModalSavedDetails) => void;
   onCancel: () => void;
+}
+
+function normalizeUrl(raw: string): string {
+  return /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
 }
 
 export const LinkModal: React.FC<LinkModalProps> = ({
@@ -16,12 +30,16 @@ export const LinkModal: React.FC<LinkModalProps> = ({
   initialUrl = '',
   initialTitle = '',
   initialFaviconOverride = '',
+  initialSecondaryUrl = '',
+  initialShowStatusDot = false,
   onSave,
   onCancel,
 }) => {
   const [url, setUrl] = useState(initialUrl);
   const [title, setTitle] = useState(initialTitle);
   const [faviconOverride, setFaviconOverride] = useState(initialFaviconOverride);
+  const [secondaryUrl, setSecondaryUrl] = useState(initialSecondaryUrl);
+  const [showStatusDot, setShowStatusDot] = useState(initialShowStatusDot);
   const [error, setError] = useState<string | null>(null);
 
   // The modal instance stays mounted (isOpen just toggles visibility), so
@@ -33,9 +51,11 @@ export const LinkModal: React.FC<LinkModalProps> = ({
       setUrl(initialUrl);
       setTitle(initialTitle);
       setFaviconOverride(initialFaviconOverride);
+      setSecondaryUrl(initialSecondaryUrl);
+      setShowStatusDot(initialShowStatusDot);
       setError(null);
     }
-  }, [isOpen, initialUrl, initialTitle, initialFaviconOverride]);
+  }, [isOpen, initialUrl, initialTitle, initialFaviconOverride, initialSecondaryUrl, initialShowStatusDot]);
 
   if (!isOpen) return null;
 
@@ -48,10 +68,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
       return;
     }
 
-    if (!/^https?:\/\//i.test(trimmedUrl)) {
-      trimmedUrl = `https://${trimmedUrl}`;
-    }
-
+    trimmedUrl = normalizeUrl(trimmedUrl);
     try {
       new URL(trimmedUrl);
     } catch {
@@ -61,19 +78,34 @@ export const LinkModal: React.FC<LinkModalProps> = ({
 
     let trimmedOverride = faviconOverride.trim();
     if (trimmedOverride) {
-      if (!/^https?:\/\//i.test(trimmedOverride)) {
-        trimmedOverride = `https://${trimmedOverride}`;
-      }
+      trimmedOverride = normalizeUrl(trimmedOverride);
       try {
         new URL(trimmedOverride);
       } catch {
-        setError('URL de favicon surcharge invalide (http:// ou https://).');
+        setError('URL de favicon surchargé invalide (http:// ou https://).');
+        return;
+      }
+    }
+
+    let trimmedSecondaryUrl = secondaryUrl.trim();
+    if (trimmedSecondaryUrl) {
+      trimmedSecondaryUrl = normalizeUrl(trimmedSecondaryUrl);
+      try {
+        new URL(trimmedSecondaryUrl);
+      } catch {
+        setError('URL du lien secondaire invalide (http:// ou https://).');
         return;
       }
     }
 
     setError(null);
-    onSave(trimmedUrl, title.trim(), trimmedOverride || undefined);
+    onSave({
+      url: trimmedUrl,
+      title: title.trim(),
+      faviconOverride: trimmedOverride || undefined,
+      secondaryUrl: trimmedSecondaryUrl || undefined,
+      showStatusDot,
+    });
   };
 
   return (
@@ -128,6 +160,34 @@ export const LinkModal: React.FC<LinkModalProps> = ({
               className="w-full px-3.5 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-100 text-sm focus:outline-none focus:border-indigo-500"
             />
           </div>
+
+          <div>
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+              Lien secondaire (ex: dépôt GitHub, optionnel)
+            </label>
+            <input
+              type="text"
+              value={secondaryUrl}
+              onChange={(e) => setSecondaryUrl(e.target.value)}
+              placeholder="https://github.com/user/repo"
+              className="w-full px-3.5 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-100 text-sm focus:outline-none focus:border-indigo-500"
+            />
+            <p className="text-[11px] text-zinc-500 mt-1">
+              Affiché comme une seconde icône cliquable, à la suite de la première.
+            </p>
+          </div>
+
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showStatusDot}
+              onChange={(e) => setShowStatusDot(e.target.checked)}
+              className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-zinc-950"
+            />
+            <span className="text-xs font-medium text-zinc-400">
+              Afficher un indicateur d'état à la place de l'icône (vert/orange/rouge)
+            </span>
+          </label>
 
           <div className="flex items-center justify-end gap-3 pt-2">
             <button
