@@ -67,6 +67,19 @@ describe('blockSchema', () => {
       blockSchema.parse({ kind: 'bogus', id: 'b1', title: 'Broken' }),
     ).toThrow();
   });
+
+  it('parses a valid html block', () => {
+    const valid = {
+      kind: 'html' as const,
+      id: 'html-1',
+      content: '<div>hello</div>',
+    };
+    expect(blockSchema.parse(valid)).toEqual(valid);
+  });
+
+  it('rejects an html block missing content', () => {
+    expect(() => blockSchema.parse({ kind: 'html', id: 'html-1' })).toThrow();
+  });
 });
 
 describe('linkSchema', () => {

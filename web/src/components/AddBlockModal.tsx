@@ -2,7 +2,11 @@ import React, { useState } from 'react';
 
 interface AddBlockModalProps {
   isOpen: boolean;
-  onSave: (config: { kind: 'links' | 'raindrop'; collectionId?: string; displayCap?: number }) => void;
+  onSave: (config: {
+    kind: 'links' | 'raindrop' | 'html';
+    collectionId?: string;
+    displayCap?: number;
+  }) => void;
   onCancel: () => void;
 }
 
@@ -11,7 +15,7 @@ export const AddBlockModal: React.FC<AddBlockModalProps> = ({
   onSave,
   onCancel,
 }) => {
-  const [kind, setKind] = useState<'links' | 'raindrop'>('links');
+  const [kind, setKind] = useState<'links' | 'raindrop' | 'html'>('links');
   const [collectionId, setCollectionId] = useState('');
   const [displayCap, setDisplayCap] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +50,7 @@ export const AddBlockModal: React.FC<AddBlockModalProps> = ({
       });
     } else {
       setError(null);
-      onSave({ kind: 'links' });
+      onSave({ kind });
     }
   };
 
@@ -66,7 +70,7 @@ export const AddBlockModal: React.FC<AddBlockModalProps> = ({
             <label className="block text-xs font-medium text-zinc-400 mb-2">
               Type de bloc
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <button
                 type="button"
                 onClick={() => {
@@ -97,6 +101,22 @@ export const AddBlockModal: React.FC<AddBlockModalProps> = ({
               >
                 <span className="font-bold">Bloc Raindrop</span>
                 <span className="text-[11px] opacity-70">Collection de favoris Raindrop.io</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setKind('html');
+                  setError(null);
+                }}
+                className={`p-3 rounded-xl border text-xs font-medium text-left flex flex-col gap-1 transition-all ${
+                  kind === 'html'
+                    ? 'bg-indigo-600/20 border-indigo-500 text-indigo-200'
+                    : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-700'
+                }`}
+              >
+                <span className="font-bold">Bloc HTML</span>
+                <span className="text-[11px] opacity-70">Widget personnalisé (HTML/JS)</span>
               </button>
             </div>
           </div>
