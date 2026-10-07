@@ -52,7 +52,7 @@ jobs:
             RAINDROP_TOKEN=$RAINDROP_TOKEN
             H0M3P4G3_ENV_MARKER
             echo "CHECKPOINT-1-env-written"
-            docker compose up --build -d --force-recreate
+            docker compose up --build -d --force-recreate < /dev/null
             echo "CHECKPOINT-2-compose-up-done"
             docker inspect h0m3p4g3 --format '{{.State.StartedAt}}'
             docker compose exec -T app printenv RAINDROP_TOKEN | cut -c1-8
