@@ -198,7 +198,7 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
 
         {block.kind === 'links' && (
           <SortableContext items={linkIds} strategy={rectSortingStrategy}>
-            <div className="flex flex-col gap-1.5 min-h-[20px]">
+            <div className="flex flex-col divide-y divide-zinc-800/40 min-h-[20px]">
               {block.links.length === 0 ? (
                 <p className="text-xs text-zinc-600 italic py-2">
                   {isEditorMode ? 'Cliquez sur + pour ajouter un lien' : 'Aucun lien'}
@@ -211,9 +211,9 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
         )}
 
         {block.kind === 'raindrop' && (
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col divide-y divide-zinc-800/40">
             {raindropItems.length === 0 ? (
-              <div className="p-3 rounded-lg bg-zinc-900/40 border border-zinc-800/40 text-xs text-zinc-500 italic flex items-center justify-between">
+              <div className="py-2 text-xs text-zinc-500 italic flex items-center justify-between">
                 <span>Collection indisponible ou vide ({block.collectionId || 'non configurée'})</span>
                 <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-900/40 text-indigo-400 font-mono shrink-0 ml-2">
                   Raindrop.io
@@ -226,7 +226,7 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
                   href={item.link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2.5 p-2 rounded-lg bg-zinc-900/40 hover:bg-zinc-800/60 border border-zinc-800/40 hover:border-zinc-700/60 transition-all text-xs text-zinc-300 hover:text-white"
+                  className="flex items-center gap-2.5 px-1.5 py-1.5 rounded-md hover:bg-white/5 transition-colors text-xs text-zinc-300 hover:text-white"
                 >
                   {item.cover && (
                     <img
