@@ -94,6 +94,37 @@ describe('Favicon Module', () => {
       expect(Buffer.from(cached!.data as Buffer)).toEqual(newIcon);
     });
 
+    it('falls back to the page\'s <link rel="icon"> when /favicon.ico 404s (Supabase/Ornikar case)', async () => {
+      const iconBytes = Buffer.from([7, 7, 7]);
+      globalThis.fetch = vi.fn().mockImplementation(async (url: string) => {
+        if (url.endsWith('/favicon.ico')) {
+          return { ok: false, headers: new Headers(), arrayBuffer: async () => new ArrayBuffer(0) };
+        }
+        if (url === 'https://no-root-favicon.com/') {
+          return {
+            ok: true,
+            text: async () =>
+              '<html><head><link rel="shortcut icon" href="/old.ico"/><link rel="icon" href="/assets/icon.png" type="image/png"/></head></html>',
+          };
+        }
+        if (url === 'https://no-root-favicon.com/assets/icon.png') {
+          return {
+            ok: true,
+            headers: new Headers({ 'content-type': 'image/png' }),
+            arrayBuffer: async () => iconBytes.buffer.slice(iconBytes.byteOffset, iconBytes.byteOffset + iconBytes.byteLength),
+          };
+        }
+        throw new Error(`unexpected fetch: ${url}`);
+      });
+
+      const result = await fetchAndStoreFavicon(dataDir, 'https://no-root-favicon.com');
+      expect(result).toBe('no-root-favicon.com');
+
+      const cached = await getCachedFavicon(dataDir, 'no-root-favicon.com');
+      expect(cached!.contentType).toBe('image/png');
+      expect(Buffer.from(cached!.data as Buffer)).toEqual(iconBytes);
+    });
+
     it('removes the old file when a refresh changes extension', async () => {
       const favDir = join(dataDir, 'favicons');
       await mkdir(favDir, { recursive: true });

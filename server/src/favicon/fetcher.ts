@@ -61,6 +61,92 @@ export async function getCachedFavicon(
   return null;
 }
 
+const FETCH_TIMEOUT_MS = 3000;
+const FAVICON_USER_AGENT = 'Mozilla/5.0 (compatible; H0M3P4G3-FaviconFetcher/1.0)';
+
+function extForContentType(contentType: string): string {
+  if (contentType.includes('png')) return '.png';
+  if (contentType.includes('svg')) return '.svg';
+  if (contentType.includes('jpeg') || contentType.includes('jpg')) return '.jpg';
+  return '.ico';
+}
+
+// Downloads one candidate icon URL and, on success, caches it and removes
+// any stale sibling file under a different extension (e.g. a refresh that
+// lands as .png after the old cache was .ico) -- otherwise getCachedFavicon
+// would keep returning whichever extension it checks first on disk.
+async function downloadAndCache(dir: string, cleanDomain: string, iconUrl: string): Promise<boolean> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+    const response = await fetch(iconUrl, {
+      signal: controller.signal,
+      headers: { 'User-Agent': FAVICON_USER_AGENT },
+    });
+
+    clearTimeout(timeout);
+    if (!response.ok) return false;
+
+    const buffer = Buffer.from(await response.arrayBuffer());
+    if (buffer.length === 0) return false;
+
+    const ext = extForContentType(response.headers.get('content-type') || '');
+    await writeFile(join(dir, `${cleanDomain}${ext}`), buffer);
+
+    for (const { ext: otherExt } of FAVICON_EXTENSIONS) {
+      if (otherExt === ext) continue;
+      await unlink(join(dir, `${cleanDomain}${otherExt}`)).catch(() => {});
+    }
+
+    console.log(`[favicon] cached ${cleanDomain} (${buffer.length} bytes) from ${iconUrl}`);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Not every site serves an icon at the conventional root path (Supabase's
+// real favicon lives at /favicon/favicon.ico, for example) -- this reads
+// the page's own <link rel="icon"> declaration as a fallback. rel values
+// are matched loosely ("shortcut icon", "icon", "apple-touch-icon", ...)
+// since sites vary, and a plain regex is enough here (no DOM parser dep).
+function extractIconHref(html: string): string | null {
+  const candidates: { rel: string; href: string }[] = [];
+  for (const tag of html.match(/<link\b[^>]*>/gi) ?? []) {
+    const rel = tag.match(/\brel=["']([^"']+)["']/i)?.[1]?.toLowerCase();
+    const href = tag.match(/\bhref=["']([^"']+)["']/i)?.[1];
+    if (rel && href && rel.includes('icon')) candidates.push({ rel, href });
+  }
+
+  const priority = ['icon', 'shortcut icon', 'apple-touch-icon'];
+  for (const rel of priority) {
+    const found = candidates.find((c) => c.rel === rel);
+    if (found) return found.href;
+  }
+  return candidates[0]?.href ?? null;
+}
+
+async function discoverIconUrl(domain: string): Promise<string | null> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+    const response = await fetch(`https://${domain}/`, {
+      signal: controller.signal,
+      headers: { 'User-Agent': FAVICON_USER_AGENT },
+    });
+
+    clearTimeout(timeout);
+    if (!response.ok) return null;
+
+    const href = extractIconHref(await response.text());
+    return href ? new URL(href, `https://${domain}/`).toString() : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchAndStoreFavicon(
   dataDir: string,
   targetUrl: string,
@@ -75,47 +161,16 @@ export async function fetchAndStoreFavicon(
     return cleanDomain;
   }
 
-  const iconUrl = `https://${cleanDomain}/favicon.ico`;
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3000);
-
-    const response = await fetch(iconUrl, {
-      signal: controller.signal,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; H0M3P4G3-FaviconFetcher/1.0)',
-      },
-    });
-
-    clearTimeout(timeout);
-
-    if (response.ok) {
-      const contentType = response.headers.get('content-type') || '';
-      const buffer = Buffer.from(await response.arrayBuffer());
-
-      if (buffer.length > 0) {
-        const ext = contentType.includes('png') ? '.png' : '.ico';
-        const targetPath = join(dir, `${cleanDomain}${ext}`);
-        await writeFile(targetPath, buffer);
-
-        // A refresh can land under a different extension than last time
-        // (e.g. .ico -> .png) -- without this, the old file would keep
-        // shadowing the new one, since getCachedFavicon returns the first
-        // extension it finds on disk.
-        for (const { ext: otherExt } of FAVICON_EXTENSIONS) {
-          if (otherExt === ext) continue;
-          await unlink(join(dir, `${cleanDomain}${otherExt}`)).catch(() => {});
-        }
-
-        console.log(`[favicon] cached ${cleanDomain} (${buffer.length} bytes)`);
-        return cleanDomain;
-      }
-    }
-  } catch (err) {
-    // NFR4: Favicon fetch failure never blocks link creation or crashes
-    console.log(`[favicon] fetch failed for ${cleanDomain}: ${err instanceof Error ? err.message : String(err)}`);
+  if (await downloadAndCache(dir, cleanDomain, `https://${cleanDomain}/favicon.ico`)) {
+    return cleanDomain;
   }
 
+  const discoveredUrl = await discoverIconUrl(cleanDomain);
+  if (discoveredUrl && (await downloadAndCache(dir, cleanDomain, discoveredUrl))) {
+    return cleanDomain;
+  }
+
+  console.log(`[favicon] no icon found for ${cleanDomain}`);
   return null;
 }
 
