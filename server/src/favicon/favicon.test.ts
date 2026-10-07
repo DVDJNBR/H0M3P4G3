@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile, mkdir, utimes } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -38,7 +38,6 @@ describe('Favicon Module', () => {
 
     it('serves cached favicon when available on disk', async () => {
       const favDir = join(dataDir, 'favicons');
-      const { mkdir } = await import('node:fs/promises');
       await mkdir(favDir, { recursive: true });
 
       const fakeIcoData = Buffer.from([0, 0, 1, 0]);
@@ -60,6 +59,61 @@ describe('Favicon Module', () => {
 
       const result = await fetchAndStoreFavicon(dataDir, 'https://broken-domain.invalid');
       expect(result).toBeNull();
+    });
+
+    it('skips a fresh cached favicon without fetching', async () => {
+      const favDir = join(dataDir, 'favicons');
+      await mkdir(favDir, { recursive: true });
+      await writeFile(join(favDir, 'fresh-domain.com.ico'), Buffer.from([0, 0]));
+
+      const fetchMock = vi.fn();
+      globalThis.fetch = fetchMock;
+
+      await fetchAndStoreFavicon(dataDir, 'https://fresh-domain.com');
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('re-fetches a stale cached favicon (the refresh bug)', async () => {
+      const favDir = join(dataDir, 'favicons');
+      await mkdir(favDir, { recursive: true });
+      const staleFile = join(favDir, 'stale-domain.com.ico');
+      await writeFile(staleFile, Buffer.from([0, 0]));
+      const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000);
+      await utimes(staleFile, eightDaysAgo, eightDaysAgo);
+
+      const newIcon = Buffer.from([1, 2, 3, 4]);
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        headers: new Headers({ 'content-type': 'image/x-icon' }),
+        arrayBuffer: async () => newIcon.buffer.slice(newIcon.byteOffset, newIcon.byteOffset + newIcon.byteLength),
+      });
+
+      await fetchAndStoreFavicon(dataDir, 'https://stale-domain.com');
+
+      const cached = await getCachedFavicon(dataDir, 'stale-domain.com');
+      expect(Buffer.from(cached!.data as Buffer)).toEqual(newIcon);
+    });
+
+    it('removes the old file when a refresh changes extension', async () => {
+      const favDir = join(dataDir, 'favicons');
+      await mkdir(favDir, { recursive: true });
+      const oldFile = join(favDir, 'switching-ext.com.ico');
+      await writeFile(oldFile, Buffer.from([0, 0]));
+      const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000);
+      await utimes(oldFile, eightDaysAgo, eightDaysAgo);
+
+      const newIcon = Buffer.from([9, 9, 9]);
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        headers: new Headers({ 'content-type': 'image/png' }),
+        arrayBuffer: async () => newIcon.buffer.slice(newIcon.byteOffset, newIcon.byteOffset + newIcon.byteLength),
+      });
+
+      await fetchAndStoreFavicon(dataDir, 'https://switching-ext.com');
+
+      const cached = await getCachedFavicon(dataDir, 'switching-ext.com');
+      expect(cached!.contentType).toBe('image/png');
+      expect(Buffer.from(cached!.data as Buffer)).toEqual(newIcon);
     });
   });
 });

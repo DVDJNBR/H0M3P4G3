@@ -1,7 +1,21 @@
-import { mkdir, readFile, writeFile, stat } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, unlink, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 
+const FAVICON_EXTENSIONS = [
+  { ext: '.ico', type: 'image/x-icon' },
+  { ext: '.png', type: 'image/png' },
+  { ext: '.jpg', type: 'image/jpeg' },
+  { ext: '.svg', type: 'image/svg+xml' },
+];
+
 const NEUTRAL_FALLBACK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`;
+
+// A site's favicon rarely changes, but "rarely" isn't "never" -- without a
+// TTL, fetchAndStoreFavicon's cache check below would skip every domain
+// forever after its first successful fetch, so a real icon change would
+// never reach the app. A week balances staying current against refetching
+// every domain on every page load.
+const FAVICON_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 export function sanitizeDomain(input: string): string {
   try {
@@ -25,25 +39,19 @@ export async function ensureFaviconsDir(dataDir: string): Promise<string> {
 export async function getCachedFavicon(
   dataDir: string,
   domain: string,
-): Promise<{ data: Buffer | string; contentType: string } | null> {
+): Promise<{ data: Buffer | string; contentType: string; cachedAt: Date } | null> {
   const cleanDomain = sanitizeDomain(domain);
   if (!cleanDomain) return null;
 
   const dir = getFaviconsDir(dataDir);
-  const extensions = [
-    { ext: '.ico', type: 'image/x-icon' },
-    { ext: '.png', type: 'image/png' },
-    { ext: '.jpg', type: 'image/jpeg' },
-    { ext: '.svg', type: 'image/svg+xml' },
-  ];
 
-  for (const { ext, type } of extensions) {
+  for (const { ext, type } of FAVICON_EXTENSIONS) {
     const file = join(dir, `${cleanDomain}${ext}`);
     try {
       const s = await stat(file);
       if (s.isFile()) {
         const data = await readFile(file);
-        return { data, contentType: type };
+        return { data, contentType: type, cachedAt: s.mtime };
       }
     } catch {
       // Ignore missing files
@@ -62,7 +70,8 @@ export async function fetchAndStoreFavicon(
 
   const dir = await ensureFaviconsDir(dataDir);
   const cached = await getCachedFavicon(dataDir, cleanDomain);
-  if (cached) {
+  const cacheAge = cached ? Date.now() - cached.cachedAt.getTime() : null;
+  if (cacheAge !== null && cacheAge < FAVICON_CACHE_TTL_MS) {
     return cleanDomain;
   }
 
@@ -88,6 +97,16 @@ export async function fetchAndStoreFavicon(
         const ext = contentType.includes('png') ? '.png' : '.ico';
         const targetPath = join(dir, `${cleanDomain}${ext}`);
         await writeFile(targetPath, buffer);
+
+        // A refresh can land under a different extension than last time
+        // (e.g. .ico -> .png) -- without this, the old file would keep
+        // shadowing the new one, since getCachedFavicon returns the first
+        // extension it finds on disk.
+        for (const { ext: otherExt } of FAVICON_EXTENSIONS) {
+          if (otherExt === ext) continue;
+          await unlink(join(dir, `${cleanDomain}${otherExt}`)).catch(() => {});
+        }
+
         console.log(`[favicon] cached ${cleanDomain} (${buffer.length} bytes)`);
         return cleanDomain;
       }
