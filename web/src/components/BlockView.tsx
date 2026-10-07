@@ -301,12 +301,25 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
                   href={item.link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-between p-2 rounded-lg bg-zinc-900/40 hover:bg-zinc-800/60 border border-zinc-800/40 hover:border-zinc-700/60 transition-all text-xs text-zinc-300 hover:text-white"
+                  className="flex items-center gap-2.5 p-2 rounded-lg bg-zinc-900/40 hover:bg-zinc-800/60 border border-zinc-800/40 hover:border-zinc-700/60 transition-all text-xs text-zinc-300 hover:text-white"
                 >
-                  <span className="truncate font-medium">{item.title}</span>
-                  <span className="text-[10px] text-zinc-500 font-mono shrink-0 ml-2">
-                    {item.domain}
-                  </span>
+                  {item.cover && (
+                    <img
+                      src={item.cover}
+                      alt=""
+                      loading="lazy"
+                      className="w-10 h-10 rounded-md object-cover shrink-0 bg-zinc-800"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  )}
+                  <div className="flex items-center justify-between min-w-0 flex-1">
+                    <span className="truncate font-medium">{item.title}</span>
+                    <span className="text-[10px] text-zinc-500 font-mono shrink-0 ml-2">
+                      {item.domain}
+                    </span>
+                  </div>
                 </a>
               ))
             )}
