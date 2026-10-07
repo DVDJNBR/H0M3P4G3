@@ -21,6 +21,7 @@ export interface AppDeps {
   rateLimiter?: RateLimiter;
   staticDir?: string;
   dataDir?: string;
+  raindropRefresh?: () => Promise<unknown>;
 }
 
 // AD-7: JSON under /api/*, camelCase keys, error envelope
@@ -54,7 +55,7 @@ export function createApp(deps: AppDeps): Hono {
   app.route('/', createLinkStatusRoutes());
 
   if (deps.dataDir) {
-    app.route('/', createRaindropRoutes(deps.dataDir));
+    app.route('/', createRaindropRoutes(deps.dataDir, deps.raindropRefresh));
   }
 
   // AD-1: Single process serving both static bundle and API routes.
@@ -120,7 +121,7 @@ async function main(): Promise<void> {
 
   const layoutStore = await initLayoutStore(config.dataDir);
 
-  startRaindropPoller(
+  const { trigger: triggerRaindropPoll } = startRaindropPoller(
     config.dataDir,
     async () => {
       try {
@@ -149,6 +150,7 @@ async function main(): Promise<void> {
       totpSecret: config.totpSecret,
       sessionSecret: config.sessionSecret,
     },
+    raindropRefresh: triggerRaindropPoll,
   });
   serve({ fetch: app.fetch, port: config.port }, (info) => {
     console.log(`[server] listening on http://localhost:${info.port}`);
