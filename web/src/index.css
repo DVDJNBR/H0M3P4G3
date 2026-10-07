@@ -19,25 +19,25 @@
   --color-zinc-200: #e5e5ea;
   --color-zinc-100: #f5f5f7; /* text-primary */
 
-  /* indigo ramp -> Apple accent blue */
-  --color-indigo-900: #0a2a4d;
-  --color-indigo-200: #b3d9ff;
-  --color-indigo-700: #1c7fe0;
-  --color-indigo-600: #2997ff; /* accent */
-  --color-indigo-500: #47a6ff;
-  --color-indigo-400: #6db9ff;
-  --color-indigo-300: #8ac7ff;
+  /* indigo ramp -> Apple accent blue, pushed to full saturation (direction C) */
+  --color-indigo-900: #082247;
+  --color-indigo-200: #a8d4ff;
+  --color-indigo-700: #0a6bdb;
+  --color-indigo-600: #0a84ff; /* accent */
+  --color-indigo-500: #3396ff;
+  --color-indigo-400: #5aa8ff;
+  --color-indigo-300: #7dbaff;
 }
 
 @layer base {
   :root {
     --bg-main: #000000;
-    --bg-card: rgba(28, 28, 30, 0.65);
-    --border-card: rgba(255, 255, 255, 0.08);
+    --bg-card: rgba(10, 10, 12, 0.92);
+    --rim-card: inset 0 1px 0 rgba(255, 255, 255, 0.08);
     --text-primary: #f5f5f7;
     --text-muted: #a1a1a6;
-    --accent: #2997ff;
-    --accent-hover: #47a6ff;
+    --accent: #0a84ff;
+    --accent-hover: #3396ff;
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
     --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.5);
@@ -55,21 +55,17 @@
 
 .glass-panel {
   background: var(--bg-card);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  border: 1px solid var(--border-card);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--rim-card), var(--shadow-sm);
 }
 
 .glass-panel-hover {
-  transition: background-color 0.4s ease, color 0.3s ease, border-color 0.4s ease, box-shadow 0.3s
+  transition: background-color 0.4s ease, color 0.3s ease, box-shadow 0.3s
     cubic-bezier(0.25, 0.1, 0.25, 1), transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 .glass-panel-hover:hover {
-  border-color: rgba(255, 255, 255, 0.16);
   transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--rim-card), var(--shadow-md);
 }
 
 /* Custom scrollbar */
