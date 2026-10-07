@@ -17,9 +17,9 @@ interface RaindropApiResponse {
 export async function fetchRaindropCollection(
   collectionId: string,
   token: string,
-): Promise<RaindropItem[] | null> {
+): Promise<{ items: RaindropItem[] } | { error: string }> {
   if (!token || token === 'placeholder' || token === 'dev-raindrop-token') {
-    return null;
+    return { error: 'no token configured' };
   }
 
   const url = `https://api.raindrop.io/rest/v1/raindrops/${collectionId}`;
@@ -38,26 +38,30 @@ export async function fetchRaindropCollection(
     clearTimeout(timeout);
 
     if (!response.ok) {
-      console.error(`[raindrop] API request failed for collection ${collectionId}: ${response.status}`);
-      return null;
+      const reason = `HTTP ${response.status}`;
+      console.error(`[raindrop] API request failed for collection ${collectionId}: ${reason}`);
+      return { error: reason };
     }
 
     const data = (await response.json()) as RaindropApiResponse;
     if (!data.result || !Array.isArray(data.items)) {
-      return null;
+      return { error: 'malformed API response' };
     }
 
-    return data.items.map((item) => ({
-      id: item._id,
-      title: item.title || item.link,
-      link: item.link,
-      domain: item.domain || new URL(item.link).hostname,
-      cover: item.cover || undefined,
-      created: item.created || new Date().toISOString(),
-    }));
+    return {
+      items: data.items.map((item) => ({
+        id: item._id,
+        title: item.title || item.link,
+        link: item.link,
+        domain: item.domain || new URL(item.link).hostname,
+        cover: item.cover || undefined,
+        created: item.created || new Date().toISOString(),
+      })),
+    };
   } catch (err) {
-    console.error(`[raindrop] fetch failed for collection ${collectionId}:`, err instanceof Error ? err.message : String(err));
-    return null;
+    const reason = err instanceof Error ? err.message : String(err);
+    console.error(`[raindrop] fetch failed for collection ${collectionId}:`, reason);
+    return { error: reason };
   }
 }
 
@@ -72,14 +76,13 @@ export async function pollRaindropCollections(
 
   for (const collectionId of collectionIds) {
     if (!collectionId) continue;
-    const items = await fetchRaindropCollection(collectionId, token);
-    if (items !== null) {
-      newCache[collectionId] = {
-        collectionId,
-        items,
-        fetchedAt: now,
-      };
-    }
+    const result = await fetchRaindropCollection(collectionId, token);
+    newCache[collectionId] = {
+      collectionId,
+      items: 'items' in result ? result.items : (currentCache[collectionId]?.items ?? []),
+      fetchedAt: now,
+      lastError: 'error' in result ? result.error : undefined,
+    };
   }
 
   await writeRaindropCache(dataDir, newCache);

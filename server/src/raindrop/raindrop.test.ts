@@ -70,7 +70,8 @@ describe('Raindrop Module', () => {
       globalThis.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
 
       const result = await pollRaindropCollections(dataDir, ['col-1'], 'test-token');
-      expect(result).toEqual({});
+      expect(result['col-1'].items).toEqual([]);
+      expect(result['col-1'].lastError).toBe('Network error');
     });
   });
 });

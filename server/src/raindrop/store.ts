@@ -14,6 +14,7 @@ export interface RaindropCollectionCache {
   collectionId: string;
   items: RaindropItem[];
   fetchedAt: string;
+  lastError?: string;
 }
 
 export type RaindropCacheMap = Record<string, RaindropCollectionCache>;
