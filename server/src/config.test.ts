@@ -12,6 +12,7 @@ const validEnv = {
   TOTP_SECRET: '2VUUIZYIXPJELMXFIZJZ4Y767RFCUB5H',
   SESSION_SECRET: 'session',
   RAINDROP_TOKEN: 'token',
+  TODOIST_TOKEN: 'todoist-token',
 };
 
 describe('loadConfig', () => {
@@ -22,6 +23,7 @@ describe('loadConfig', () => {
       totpSecret: validEnv.TOTP_SECRET,
       sessionSecret: 'session',
       raindropToken: 'token',
+      todoistToken: 'todoist-token',
       port: 3000,
       dataDir: './data',
     });
@@ -38,6 +40,7 @@ describe('loadConfig', () => {
     'TOTP_SECRET',
     'SESSION_SECRET',
     'RAINDROP_TOKEN',
+    'TODOIST_TOKEN',
   ] as const)('fails fast naming %s when it is unset', (name) => {
     const env: Record<string, string> = { ...validEnv };
     delete env[name];
@@ -58,7 +61,7 @@ describe('loadConfig', () => {
 
   it('names every missing variable at once', () => {
     expect(() => loadConfig({})).toThrowError(
-      /PASSWORD_HASH, TOTP_SECRET, SESSION_SECRET, RAINDROP_TOKEN/,
+      /PASSWORD_HASH, TOTP_SECRET, SESSION_SECRET, RAINDROP_TOKEN, TODOIST_TOKEN/,
     );
   });
 

@@ -7,6 +7,7 @@ export interface Config {
   totpSecret: string;
   sessionSecret: string;
   raindropToken: string;
+  todoistToken: string;
   port: number;
   dataDir: string;
 }
@@ -16,6 +17,7 @@ const REQUIRED_VARS = [
   'TOTP_SECRET',
   'SESSION_SECRET',
   'RAINDROP_TOKEN',
+  'TODOIST_TOKEN',
 ] as const;
 
 const DEFAULT_PORT = 3000;
@@ -87,6 +89,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     totpSecret: env.TOTP_SECRET as string,
     sessionSecret: env.SESSION_SECRET as string,
     raindropToken: env.RAINDROP_TOKEN as string,
+    todoistToken: env.TODOIST_TOKEN as string,
     port,
     dataDir: env.DATA_DIR !== undefined && env.DATA_DIR !== '' ? env.DATA_DIR : DEFAULT_DATA_DIR,
   };

@@ -9,7 +9,7 @@ import { LinkModal } from './LinkModal';
 import { RaindropBlockModal } from './RaindropBlockModal';
 import { HtmlBlockModal } from './HtmlBlockModal';
 import { HtmlBlockView } from './HtmlBlockView';
-import { fetchRaindropCache, type RaindropCacheMap } from '../api/client';
+import { fetchRaindropCache, type RaindropCacheMap, fetchTodoistCache, type TodoistCache } from '../api/client';
 
 // Above this, a links block's longest entry needs the mosaic's wide track
 // to avoid truncating; at or under it, the narrow track fits comfortably.
@@ -37,6 +37,7 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
   const [showEditRaindropModal, setShowEditRaindropModal] = useState(false);
   const [showEditHtmlModal, setShowEditHtmlModal] = useState(false);
   const [raindropData, setRaindropData] = useState<RaindropCacheMap[string] | null>(null);
+  const [todoistData, setTodoistData] = useState<TodoistCache | null>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
   // Default anchor is the block's right edge (grows left, see className
   // below) -- safe for every block except one narrow enough, near enough
@@ -79,6 +80,9 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
         }
       });
     }
+    if (block.kind === 'todoist') {
+      fetchTodoistCache().then(setTodoistData);
+    }
   }, [block]);
 
   const handleDeleteRequest = () => {
@@ -91,6 +95,10 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
 
   const isStale = raindropData?.fetchedAt
     ? Date.now() - new Date(raindropData.fetchedAt).getTime() > 20 * 60 * 1000
+    : false;
+
+  const isTodoistStale = todoistData?.fetchedAt
+    ? Date.now() - new Date(todoistData.fetchedAt).getTime() > 20 * 60 * 1000
     : false;
 
   const raindropItems = raindropData?.items
@@ -196,6 +204,12 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
           </span>
         )}
 
+        {block.kind === 'todoist' && isTodoistStale && (
+          <span className="self-start text-[10px] text-amber-400 font-normal px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
+            Hors ligne / Obsolète
+          </span>
+        )}
+
         {block.kind === 'links' && (
           <SortableContext items={linkIds} strategy={rectSortingStrategy}>
             <div className="flex flex-col gap-0.5 min-h-[20px]">
@@ -252,6 +266,32 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
         )}
 
         {block.kind === 'html' && <HtmlBlockView content={block.content} />}
+
+        {block.kind === 'todoist' && (
+          <div className="flex flex-col gap-0.5">
+            {(todoistData?.tasks?.length ?? 0) === 0 ? (
+              <div className="py-2 text-xs text-zinc-500 italic flex items-center justify-between">
+                <span>{todoistData?.lastError ? `Indisponible (${todoistData.lastError})` : 'Aucune tâche active'}</span>
+                <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-900/40 text-indigo-400 font-mono shrink-0 ml-2">
+                  Todoist
+                </span>
+              </div>
+            ) : (
+              todoistData!.tasks.map((task) => (
+                <a
+                  key={task.id}
+                  href={`https://app.todoist.com/app/task/${task.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2.5 px-1.5 py-1.5 rounded-md hover:bg-white/5 transition-colors text-xs text-zinc-300 hover:text-white"
+                >
+                  <span className="w-3.5 h-3.5 rounded-full border border-zinc-600 shrink-0" />
+                  <span className="truncate">{task.content}</span>
+                </a>
+              ))
+            )}
+          </div>
+        )}
       </div>
 
       <ConfirmModal

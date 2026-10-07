@@ -156,7 +156,7 @@ interface ContextValue extends State {
   setBlocks: (newBlocks: Block[]) => Promise<void>;
   addBlock: (
     blockConfig?: {
-      kind?: 'links' | 'raindrop' | 'html';
+      kind?: 'links' | 'raindrop' | 'html' | 'todoist';
       collectionId?: string;
       displayCap?: number;
     },
@@ -254,7 +254,7 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const addBlock = useCallback(
     async (blockConfig?: {
-      kind?: 'links' | 'raindrop' | 'html';
+      kind?: 'links' | 'raindrop' | 'html' | 'todoist';
       collectionId?: string;
       displayCap?: number;
     }) => {
@@ -273,6 +273,11 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           kind: 'html',
           id: nanoid(),
           content: DEFAULT_HTML_BLOCK_CONTENT,
+        };
+      } else if (kind === 'todoist') {
+        newBlock = {
+          kind: 'todoist',
+          id: nanoid(),
         };
       } else {
         newBlock = {

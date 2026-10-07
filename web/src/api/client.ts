@@ -110,6 +110,35 @@ async function fetchRaindropCacheFromServer(): Promise<RaindropCacheMap> {
   }
 }
 
+export interface TodoistCache {
+  tasks: Array<{ id: string; content: string }>;
+  fetchedAt: string | null;
+  lastError?: string;
+}
+
+let inFlightTodoistCacheFetch: Promise<TodoistCache> | null = null;
+
+export async function fetchTodoistCache(): Promise<TodoistCache> {
+  if (inFlightTodoistCacheFetch) return inFlightTodoistCacheFetch;
+
+  inFlightTodoistCacheFetch = fetchTodoistCacheFromServer().finally(() => {
+    inFlightTodoistCacheFetch = null;
+  });
+  return inFlightTodoistCacheFetch;
+}
+
+async function fetchTodoistCacheFromServer(): Promise<TodoistCache> {
+  try {
+    const res = await fetch('/api/todoist-cache', {
+      headers: { Accept: 'application/json' },
+    });
+    if (!res.ok) return { tasks: [], fetchedAt: null };
+    return await res.json();
+  } catch {
+    return { tasks: [], fetchedAt: null };
+  }
+}
+
 export type LinkStatusBucket = 'up' | 'degraded' | 'down';
 
 export async function fetchLinkStatus(url: string): Promise<LinkStatusBucket> {

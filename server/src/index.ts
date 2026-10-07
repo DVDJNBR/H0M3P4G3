@@ -13,6 +13,8 @@ import { createLayoutRoutes } from './layout/routes.js';
 import { createLinkStatusRoutes } from './linkStatus/routes.js';
 import { createRaindropRoutes } from './raindrop/routes.js';
 import { startRaindropPoller } from './raindrop/poller.js';
+import { createTodoistRoutes } from './todoist/routes.js';
+import { startTodoistPoller } from './todoist/poller.js';
 import { initLayoutStore, type LayoutStore } from './storage/layout-store.js';
 
 export interface AppDeps {
@@ -22,6 +24,7 @@ export interface AppDeps {
   staticDir?: string;
   dataDir?: string;
   raindropRefresh?: () => Promise<unknown>;
+  todoistRefresh?: () => Promise<unknown>;
 }
 
 // AD-7: JSON under /api/*, camelCase keys, error envelope
@@ -56,6 +59,7 @@ export function createApp(deps: AppDeps): Hono {
 
   if (deps.dataDir) {
     app.route('/', createRaindropRoutes(deps.dataDir, deps.raindropRefresh));
+    app.route('/', createTodoistRoutes(deps.dataDir, deps.todoistRefresh));
   }
 
   // AD-1: Single process serving both static bundle and API routes.
@@ -142,6 +146,19 @@ async function main(): Promise<void> {
     config.raindropToken,
   );
 
+  const { trigger: triggerTodoistPoll } = startTodoistPoller(
+    config.dataDir,
+    async () => {
+      try {
+        const layout = await layoutStore.readLayout();
+        return layout.columns.some((col) => col.blocks.some((b) => b.kind === 'todoist'));
+      } catch {
+        return false;
+      }
+    },
+    config.todoistToken,
+  );
+
   const app = createApp({
     layoutStore,
     dataDir: config.dataDir,
@@ -151,6 +168,7 @@ async function main(): Promise<void> {
       sessionSecret: config.sessionSecret,
     },
     raindropRefresh: triggerRaindropPoll,
+    todoistRefresh: triggerTodoistPoll,
   });
   serve({ fetch: app.fetch, port: config.port }, (info) => {
     console.log(`[server] listening on http://localhost:${info.port}`);

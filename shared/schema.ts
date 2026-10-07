@@ -48,11 +48,20 @@ export const htmlBlockSchema = z.object({
   content: z.string(),
 });
 
+// Read-only view of the owner's active Todoist tasks (no date | overdue |
+// today, mirroring TodoBar's own filter). Single personal account, same
+// token-in-env-no-per-block-config shape as the Raindrop block.
+export const todoistBlockSchema = z.object({
+  kind: z.literal('todoist'),
+  id: z.string().min(1),
+});
+
 // Discriminated on `kind` — the Epic 2/3 forward contract.
 export const blockSchema = z.discriminatedUnion('kind', [
   linksBlockSchema,
   raindropBlockSchema,
   htmlBlockSchema,
+  todoistBlockSchema,
 ]);
 
 export const columnSchema = z.object({
@@ -68,6 +77,7 @@ export type Link = z.infer<typeof linkSchema>;
 export type LinksBlock = z.infer<typeof linksBlockSchema>;
 export type RaindropBlock = z.infer<typeof raindropBlockSchema>;
 export type HtmlBlock = z.infer<typeof htmlBlockSchema>;
+export type TodoistBlock = z.infer<typeof todoistBlockSchema>;
 export type Block = z.infer<typeof blockSchema>;
 export type Column = z.infer<typeof columnSchema>;
 export type Layout = z.infer<typeof layoutSchema>;

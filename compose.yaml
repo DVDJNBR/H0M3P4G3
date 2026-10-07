@@ -16,6 +16,7 @@ services:
       - TOTP_SECRET=${TOTP_SECRET}
       - SESSION_SECRET=${SESSION_SECRET}
       - RAINDROP_TOKEN=${RAINDROP_TOKEN:-placeholder}
+      - TODOIST_TOKEN=${TODOIST_TOKEN:-placeholder}
     volumes:
       - h0m3p4g3-data:/data
 

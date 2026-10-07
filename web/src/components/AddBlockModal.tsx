@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 interface AddBlockModalProps {
   isOpen: boolean;
   onSave: (config: {
-    kind: 'links' | 'raindrop' | 'html';
+    kind: 'links' | 'raindrop' | 'html' | 'todoist';
     collectionId?: string;
     displayCap?: number;
   }) => void;
@@ -15,7 +15,7 @@ export const AddBlockModal: React.FC<AddBlockModalProps> = ({
   onSave,
   onCancel,
 }) => {
-  const [kind, setKind] = useState<'links' | 'raindrop' | 'html'>('links');
+  const [kind, setKind] = useState<'links' | 'raindrop' | 'html' | 'todoist'>('links');
   const [collectionId, setCollectionId] = useState('');
   const [displayCap, setDisplayCap] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +70,7 @@ export const AddBlockModal: React.FC<AddBlockModalProps> = ({
             <label className="block text-xs font-medium text-zinc-400 mb-2">
               Type de bloc
             </label>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={() => {
@@ -117,6 +117,22 @@ export const AddBlockModal: React.FC<AddBlockModalProps> = ({
               >
                 <span className="font-bold">Bloc HTML</span>
                 <span className="text-[11px] opacity-70">Widget personnalisé (HTML/JS)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setKind('todoist');
+                  setError(null);
+                }}
+                className={`p-3 rounded-xl text-xs font-medium text-left flex flex-col gap-1 transition-colors ${
+                  kind === 'todoist'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                }`}
+              >
+                <span className="font-bold">Bloc Todoist</span>
+                <span className="text-[11px] opacity-70">Tâches actives (aujourd'hui, en retard)</span>
               </button>
             </div>
           </div>
