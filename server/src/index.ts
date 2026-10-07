@@ -24,6 +24,7 @@ export interface AppDeps {
   staticDir?: string;
   dataDir?: string;
   raindropRefresh?: () => Promise<unknown>;
+  todoistToken?: string;
   todoistRefresh?: () => Promise<unknown>;
 }
 
@@ -59,7 +60,7 @@ export function createApp(deps: AppDeps): Hono {
 
   if (deps.dataDir) {
     app.route('/', createRaindropRoutes(deps.dataDir, deps.raindropRefresh));
-    app.route('/', createTodoistRoutes(deps.dataDir, deps.todoistRefresh));
+    app.route('/', createTodoistRoutes(deps.dataDir, deps.todoistToken ?? '', deps.todoistRefresh));
   }
 
   // AD-1: Single process serving both static bundle and API routes.
@@ -168,6 +169,7 @@ async function main(): Promise<void> {
       sessionSecret: config.sessionSecret,
     },
     raindropRefresh: triggerRaindropPoll,
+    todoistToken: config.todoistToken,
     todoistRefresh: triggerTodoistPoll,
   });
   serve({ fetch: app.fetch, port: config.port }, (info) => {

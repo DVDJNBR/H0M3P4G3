@@ -9,7 +9,15 @@ import { LinkModal } from './LinkModal';
 import { RaindropBlockModal } from './RaindropBlockModal';
 import { HtmlBlockModal } from './HtmlBlockModal';
 import { HtmlBlockView } from './HtmlBlockView';
-import { fetchRaindropCache, type RaindropCacheMap, fetchTodoistCache, type TodoistCache } from '../api/client';
+import {
+  fetchRaindropCache,
+  type RaindropCacheMap,
+  fetchTodoistCache,
+  createTodoistTask,
+  completeTodoistTask,
+  deleteTodoistTask,
+  type TodoistCache,
+} from '../api/client';
 
 // Above this, a links block's longest entry needs the mosaic's wide track
 // to avoid truncating; at or under it, the narrow track fits comfortably.
@@ -18,6 +26,17 @@ const WIDE_TRACK_CHAR_THRESHOLD = 22;
 function longestLinkLabelLength(block: Block): number {
   if (block.kind !== 'links') return 0;
   return block.links.reduce((max, l) => Math.max(max, (l.title || l.url).length), 0);
+}
+
+// Matches Todoist's own color convention for a due date: red once it's
+// past, amber on the day itself. No color (and no label) otherwise --
+// the active-tasks filter already excludes anything further out.
+function todoistDateStatus(dueDate?: string): 'overdue' | 'today' | null {
+  if (!dueDate) return null;
+  const today = new Date().toISOString().slice(0, 10);
+  if (dueDate < today) return 'overdue';
+  if (dueDate === today) return 'today';
+  return null;
 }
 
 interface BlockViewProps {
@@ -38,6 +57,8 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
   const [showEditHtmlModal, setShowEditHtmlModal] = useState(false);
   const [raindropData, setRaindropData] = useState<RaindropCacheMap[string] | null>(null);
   const [todoistData, setTodoistData] = useState<TodoistCache | null>(null);
+  const [showAddTodoistTask, setShowAddTodoistTask] = useState(false);
+  const [newTodoistContent, setNewTodoistContent] = useState('');
   const toolbarRef = useRef<HTMLDivElement>(null);
   // Default anchor is the block's right edge (grows left, see className
   // below) -- safe for every block except one narrow enough, near enough
@@ -90,6 +111,42 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
       setShowConfirmDelete(true);
     } else {
       deleteBlock(block.id);
+    }
+  };
+
+  const handleAddTodoistTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const content = newTodoistContent.trim();
+    if (!content) return;
+    setNewTodoistContent('');
+    setShowAddTodoistTask(false);
+    try {
+      setTodoistData(await createTodoistTask(content));
+    } catch {
+      // The create may have still gone through server-side (NFR4: never
+      // block the UI on it) -- a manual refresh will pick it up either way.
+    }
+  };
+
+  const handleCompleteTodoistTask = async (taskId: string) => {
+    setTodoistData((prev) =>
+      prev ? { ...prev, tasks: prev.tasks.filter((t) => t.id !== taskId) } : prev,
+    );
+    try {
+      setTodoistData(await completeTodoistTask(taskId, true));
+    } catch {
+      fetchTodoistCache().then(setTodoistData);
+    }
+  };
+
+  const handleDeleteTodoistTask = async (taskId: string) => {
+    setTodoistData((prev) =>
+      prev ? { ...prev, tasks: prev.tasks.filter((t) => t.id !== taskId) } : prev,
+    );
+    try {
+      setTodoistData(await deleteTodoistTask(taskId));
+    } catch {
+      fetchTodoistCache().then(setTodoistData);
     }
   };
 
@@ -166,6 +223,17 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
                       strokeWidth={2}
                       d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
                     />
+                  </svg>
+                </button>
+              )}
+              {block.kind === 'todoist' && (
+                <button
+                  onClick={() => setShowAddTodoistTask(true)}
+                  className="text-zinc-500 hover:text-indigo-400 p-1 transition-colors"
+                  title="Ajouter une tâche"
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
                 </button>
               )}
@@ -269,7 +337,30 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
 
         {block.kind === 'todoist' && (
           <div className="flex flex-col gap-0.5">
-            {(todoistData?.tasks?.length ?? 0) === 0 ? (
+            {showAddTodoistTask && (
+              <form onSubmit={handleAddTodoistTask} className="flex items-center gap-2.5 px-1.5 py-1.5">
+                <span className="w-3.5 h-3.5 rounded-full border border-zinc-600 shrink-0" />
+                <input
+                  type="text"
+                  value={newTodoistContent}
+                  onChange={(e) => setNewTodoistContent(e.target.value)}
+                  onBlur={() => {
+                    if (!newTodoistContent.trim()) setShowAddTodoistTask(false);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      setNewTodoistContent('');
+                      setShowAddTodoistTask(false);
+                    }
+                  }}
+                  placeholder="Nouvelle tâche..."
+                  autoFocus
+                  className="flex-1 min-w-0 bg-transparent text-xs text-zinc-100 placeholder-zinc-600 focus:outline-none"
+                />
+              </form>
+            )}
+
+            {(todoistData?.tasks?.length ?? 0) === 0 && !showAddTodoistTask ? (
               <div className="py-2 text-xs text-zinc-500 italic flex items-center justify-between">
                 <span>{todoistData?.lastError ? `Indisponible (${todoistData.lastError})` : 'Aucune tâche active'}</span>
                 <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-900/40 text-indigo-400 font-mono shrink-0 ml-2">
@@ -277,18 +368,49 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
                 </span>
               </div>
             ) : (
-              todoistData!.tasks.map((task) => (
-                <a
-                  key={task.id}
-                  href={`https://app.todoist.com/app/task/${task.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2.5 px-1.5 py-1.5 rounded-md hover:bg-white/5 transition-colors text-xs text-zinc-300 hover:text-white"
-                >
-                  <span className="w-3.5 h-3.5 rounded-full border border-zinc-600 shrink-0" />
-                  <span className="truncate">{task.content}</span>
-                </a>
-              ))
+              todoistData!.tasks.map((task) => {
+                const dateStatus = todoistDateStatus(task.dueDate);
+                return (
+                  <div
+                    key={task.id}
+                    className="group/task flex items-center gap-2.5 px-1.5 py-1.5 rounded-md hover:bg-white/5 transition-colors text-xs text-zinc-300"
+                  >
+                    <button
+                      onClick={() => handleCompleteTodoistTask(task.id)}
+                      title="Marquer comme terminé"
+                      className="w-3.5 h-3.5 rounded-full border border-zinc-600 shrink-0 hover:border-indigo-400 hover:bg-indigo-500/20 transition-colors"
+                    />
+                    <a
+                      href={`https://app.todoist.com/app/task/${task.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="truncate flex-1 min-w-0 hover:text-white"
+                    >
+                      {task.content}
+                    </a>
+                    {dateStatus && (
+                      <span
+                        className={`text-[10px] font-mono shrink-0 ${
+                          dateStatus === 'overdue' ? 'text-red-400' : 'text-amber-400'
+                        }`}
+                      >
+                        {dateStatus === 'overdue' ? 'En retard' : "Aujourd'hui"}
+                      </span>
+                    )}
+                    {isEditorMode && (
+                      <button
+                        onClick={() => handleDeleteTodoistTask(task.id)}
+                        title="Supprimer la tâche"
+                        className="text-zinc-600 hover:text-red-400 p-0.5 shrink-0 opacity-0 group-hover/task:opacity-100 transition-opacity"
+                      >
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                );
+              })
             )}
           </div>
         )}

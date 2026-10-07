@@ -3,6 +3,7 @@ import { readTodoistCache, writeTodoistCache, type TodoistTask, type TodoistCach
 interface TodoistApiTask {
   id: string;
   content: string;
+  due?: { date: string } | null;
 }
 
 type TodoistApiResponse = TodoistApiTask[] | { results: TodoistApiTask[] };
@@ -40,7 +41,7 @@ export async function fetchActiveTasks(
     const raw: TodoistApiTask[] = Array.isArray(data) ? data : data.results;
 
     return {
-      tasks: raw.map((t) => ({ id: t.id, content: t.content })),
+      tasks: raw.map((t) => ({ id: t.id, content: t.content, dueDate: t.due?.date })),
     };
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);

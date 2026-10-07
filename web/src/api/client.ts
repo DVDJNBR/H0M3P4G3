@@ -111,7 +111,7 @@ async function fetchRaindropCacheFromServer(): Promise<RaindropCacheMap> {
 }
 
 export interface TodoistCache {
-  tasks: Array<{ id: string; content: string }>;
+  tasks: Array<{ id: string; content: string; dueDate?: string }>;
   fetchedAt: string | null;
   lastError?: string;
 }
@@ -137,6 +137,35 @@ async function fetchTodoistCacheFromServer(): Promise<TodoistCache> {
   } catch {
     return { tasks: [], fetchedAt: null };
   }
+}
+
+// Every mutation hits the real Todoist API server-side and returns the
+// freshly re-polled cache, so TodoBar (and this homepage) always agree --
+// there's no separate sync step, just two clients of the same account.
+export async function createTodoistTask(content: string): Promise<TodoistCache> {
+  const res = await fetch('/api/todoist-cache/tasks', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content }),
+  });
+  if (!res.ok) throw new ApiError('createFailed', 'Failed to create task', res.status);
+  return res.json();
+}
+
+export async function completeTodoistTask(id: string, completed: boolean): Promise<TodoistCache> {
+  const res = await fetch(`/api/todoist-cache/tasks/${id}/complete`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ completed }),
+  });
+  if (!res.ok) throw new ApiError('completeFailed', 'Failed to update task', res.status);
+  return res.json();
+}
+
+export async function deleteTodoistTask(id: string): Promise<TodoistCache> {
+  const res = await fetch(`/api/todoist-cache/tasks/${id}`, { method: 'DELETE' });
+  if (!res.ok) throw new ApiError('deleteFailed', 'Failed to delete task', res.status);
+  return res.json();
 }
 
 export type LinkStatusBucket = 'up' | 'degraded' | 'down';

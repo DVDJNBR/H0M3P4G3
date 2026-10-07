@@ -44,21 +44,21 @@ describe('Todoist Module', () => {
       };
       await writeTodoistCache(dataDir, mockCache);
 
-      const app = createTodoistRoutes(dataDir);
+      const app = createTodoistRoutes(dataDir, 'test-token');
       const res = await app.request('/api/todoist-cache');
       expect(res.status).toBe(200);
       expect(await res.json()).toEqual(mockCache);
     });
 
     it('GET /api/todoist-cache returns an empty shape when nothing cached yet', async () => {
-      const app = createTodoistRoutes(dataDir);
+      const app = createTodoistRoutes(dataDir, 'test-token');
       const res = await app.request('/api/todoist-cache');
       expect(res.status).toBe(200);
       expect(await res.json()).toEqual({ tasks: [], fetchedAt: null });
     });
 
     it('POST /api/todoist-cache/refresh 503s when no refresh function is wired', async () => {
-      const app = createTodoistRoutes(dataDir);
+      const app = createTodoistRoutes(dataDir, 'test-token');
       const res = await app.request('/api/todoist-cache/refresh', { method: 'POST' });
       expect(res.status).toBe(503);
     });
@@ -70,7 +70,7 @@ describe('Todoist Module', () => {
         await writeTodoistCache(dataDir, { tasks: [{ id: '2', content: 'new task' }], fetchedAt: 'now' });
       };
 
-      const app = createTodoistRoutes(dataDir, refresh);
+      const app = createTodoistRoutes(dataDir, 'test-token', refresh);
       const res = await app.request('/api/todoist-cache/refresh', { method: 'POST' });
       expect(called).toBe(true);
       expect(res.status).toBe(200);
@@ -107,6 +107,85 @@ describe('Todoist Module', () => {
       });
       const result = await fetchActiveTasks('a-real-token');
       expect(result).toEqual({ tasks: [{ id: '1', content: 'Tusmo' }] });
+    });
+  });
+
+  describe('Mutation routes', () => {
+    it('POST /tasks creates a task via the real API, then returns the refreshed cache', async () => {
+      const fetchMock = vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+        if (init?.method === 'POST' && url.endsWith('/tasks')) {
+          return { ok: true, status: 200, json: async () => ({ id: 'new-id' }) };
+        }
+        return { ok: true, status: 200, json: async () => [{ id: 'new-id', content: 'Faire les courses' }] };
+      });
+      globalThis.fetch = fetchMock;
+
+      const app = createTodoistRoutes(dataDir, 'test-token', () => pollTodoist(dataDir, 'test-token'));
+      const res = await app.request('/api/todoist-cache/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: 'Faire les courses' }),
+      });
+
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { tasks: { content: string }[] };
+      expect(body.tasks).toEqual([{ id: 'new-id', content: 'Faire les courses' }]);
+    });
+
+    it('POST /tasks rejects empty content without calling the API', async () => {
+      const fetchMock = vi.fn();
+      globalThis.fetch = fetchMock;
+
+      const app = createTodoistRoutes(dataDir, 'test-token');
+      const res = await app.request('/api/todoist-cache/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: '  ' }),
+      });
+
+      expect(res.status).toBe(400);
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('POST /tasks/:id/complete closes the task then refreshes', async () => {
+      const fetchMock = vi.fn().mockImplementation(async (url: string) => {
+        if (url.includes('/close')) return { ok: true, status: 200 };
+        return { ok: true, status: 200, json: async () => [] };
+      });
+      globalThis.fetch = fetchMock;
+
+      const app = createTodoistRoutes(dataDir, 'test-token');
+      const res = await app.request('/api/todoist-cache/tasks/abc/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ completed: true }),
+      });
+
+      expect(res.status).toBe(200);
+      expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/tasks/abc/close'), expect.anything());
+    });
+
+    it('DELETE /tasks/:id removes the task then refreshes', async () => {
+      const fetchMock = vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+        if (init?.method === 'DELETE') return { ok: true, status: 200 };
+        return { ok: true, status: 200, json: async () => [] };
+      });
+      globalThis.fetch = fetchMock;
+
+      const app = createTodoistRoutes(dataDir, 'test-token');
+      const res = await app.request('/api/todoist-cache/tasks/abc', { method: 'DELETE' });
+
+      expect(res.status).toBe(200);
+      expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/tasks/abc'), expect.objectContaining({ method: 'DELETE' }));
+    });
+
+    it('surfaces a Todoist API failure as the same status code', async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 401 });
+
+      const app = createTodoistRoutes(dataDir, 'test-token');
+      const res = await app.request('/api/todoist-cache/tasks/abc', { method: 'DELETE' });
+
+      expect(res.status).toBe(401);
     });
   });
 

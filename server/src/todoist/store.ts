@@ -4,6 +4,10 @@ import { dirname, join } from 'node:path';
 export interface TodoistTask {
   id: string;
   content: string;
+  // YYYY-MM-DD, present whenever the task has a due date -- compared
+  // client-side against "today" to color it the way Todoist itself does
+  // (red = overdue, amber = due today).
+  dueDate?: string;
 }
 
 export interface TodoistCache {
