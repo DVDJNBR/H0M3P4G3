@@ -30,7 +30,7 @@ export const HtmlBlockModal: React.FC<HtmlBlockModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="w-full max-w-2xl glass-panel rounded-2xl p-6 shadow-2xl border border-zinc-800 space-y-4">
+      <div className="w-full max-w-2xl glass-panel rounded-2xl p-6 shadow-2xl space-y-4">
         <h3 className="text-base font-bold text-zinc-100">{modalTitle}</h3>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -43,7 +43,7 @@ export const HtmlBlockModal: React.FC<HtmlBlockModalProps> = ({
               onChange={(e) => setContent(e.target.value)}
               rows={18}
               spellCheck={false}
-              className="w-full px-3.5 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-100 text-xs focus:outline-none focus:border-indigo-500 font-mono resize-y"
+              className="w-full px-3.5 py-2.5 rounded-lg bg-zinc-800 text-zinc-100 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono resize-y"
               autoFocus
             />
             <p className="text-[11px] text-zinc-500 mt-1">
@@ -56,7 +56,7 @@ export const HtmlBlockModal: React.FC<HtmlBlockModalProps> = ({
             <button
               type="button"
               onClick={onCancel}
-              className="py-2 px-4 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-medium border border-zinc-800 transition-all"
+              className="py-2 px-4 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-medium transition-all"
             >
               Annuler
             </button>

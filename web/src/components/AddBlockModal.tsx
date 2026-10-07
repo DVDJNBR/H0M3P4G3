@@ -56,7 +56,7 @@ export const AddBlockModal: React.FC<AddBlockModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="w-full max-w-md glass-panel rounded-2xl p-6 shadow-2xl border border-zinc-800 space-y-4">
+      <div className="w-full max-w-md glass-panel rounded-2xl p-6 shadow-2xl space-y-4">
         <h3 className="text-base font-bold text-zinc-100">Ajouter un bloc</h3>
 
         {error && (
@@ -77,10 +77,10 @@ export const AddBlockModal: React.FC<AddBlockModalProps> = ({
                   setKind('links');
                   setError(null);
                 }}
-                className={`p-3 rounded-xl border text-xs font-medium text-left flex flex-col gap-1 transition-all ${
+                className={`p-3 rounded-xl text-xs font-medium text-left flex flex-col gap-1 transition-colors ${
                   kind === 'links'
-                    ? 'bg-indigo-600/20 border-indigo-500 text-indigo-200'
-                    : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-700'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
                 }`}
               >
                 <span className="font-bold">Bloc de Liens</span>
@@ -93,10 +93,10 @@ export const AddBlockModal: React.FC<AddBlockModalProps> = ({
                   setKind('raindrop');
                   setError(null);
                 }}
-                className={`p-3 rounded-xl border text-xs font-medium text-left flex flex-col gap-1 transition-all ${
+                className={`p-3 rounded-xl text-xs font-medium text-left flex flex-col gap-1 transition-colors ${
                   kind === 'raindrop'
-                    ? 'bg-indigo-600/20 border-indigo-500 text-indigo-200'
-                    : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-700'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
                 }`}
               >
                 <span className="font-bold">Bloc Raindrop</span>
@@ -109,10 +109,10 @@ export const AddBlockModal: React.FC<AddBlockModalProps> = ({
                   setKind('html');
                   setError(null);
                 }}
-                className={`p-3 rounded-xl border text-xs font-medium text-left flex flex-col gap-1 transition-all ${
+                className={`p-3 rounded-xl text-xs font-medium text-left flex flex-col gap-1 transition-colors ${
                   kind === 'html'
-                    ? 'bg-indigo-600/20 border-indigo-500 text-indigo-200'
-                    : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-700'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
                 }`}
               >
                 <span className="font-bold">Bloc HTML</span>
@@ -133,7 +133,7 @@ export const AddBlockModal: React.FC<AddBlockModalProps> = ({
                   onChange={(e) => setCollectionId(e.target.value)}
                   placeholder="ex: 12345678"
                   autoFocus
-                  className="w-full px-3.5 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-100 text-sm focus:outline-none focus:border-indigo-500 font-mono"
+                  className="w-full px-3.5 py-2 rounded-lg bg-zinc-800 text-zinc-100 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
                   required
                 />
               </div>
@@ -149,7 +149,7 @@ export const AddBlockModal: React.FC<AddBlockModalProps> = ({
                   value={displayCap}
                   onChange={(e) => setDisplayCap(e.target.value)}
                   placeholder="ex: 5 (vide = tous)"
-                  className="w-full px-3.5 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-100 text-sm focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3.5 py-2 rounded-lg bg-zinc-800 text-zinc-100 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
               </div>
             </>
@@ -159,7 +159,7 @@ export const AddBlockModal: React.FC<AddBlockModalProps> = ({
             <button
               type="button"
               onClick={onCancel}
-              className="py-2 px-4 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-medium border border-zinc-800 transition-all"
+              className="py-2 px-4 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-medium transition-all"
             >
               Annuler
             </button>

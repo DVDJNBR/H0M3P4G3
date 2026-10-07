@@ -58,7 +58,7 @@ export const RaindropBlockModal: React.FC<RaindropBlockModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="w-full max-w-md glass-panel rounded-2xl p-6 shadow-2xl border border-zinc-800 space-y-4">
+      <div className="w-full max-w-md glass-panel rounded-2xl p-6 shadow-2xl space-y-4">
         <h3 className="text-base font-bold text-zinc-100">{modalTitle}</h3>
 
         {error && (
@@ -77,7 +77,7 @@ export const RaindropBlockModal: React.FC<RaindropBlockModalProps> = ({
               value={collectionId}
               onChange={(e) => setCollectionId(e.target.value)}
               placeholder="ex: 12345678"
-              className="w-full px-3.5 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-100 text-sm focus:outline-none focus:border-indigo-500 font-mono"
+              className="w-full px-3.5 py-2 rounded-lg bg-zinc-800 text-zinc-100 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
               autoFocus
               required
             />
@@ -97,7 +97,7 @@ export const RaindropBlockModal: React.FC<RaindropBlockModalProps> = ({
               value={displayCap}
               onChange={(e) => setDisplayCap(e.target.value)}
               placeholder="ex: 5 (vide = tous)"
-              className="w-full px-3.5 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-100 text-sm focus:outline-none focus:border-indigo-500"
+              className="w-full px-3.5 py-2 rounded-lg bg-zinc-800 text-zinc-100 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
           </div>
 
@@ -105,7 +105,7 @@ export const RaindropBlockModal: React.FC<RaindropBlockModalProps> = ({
             <button
               type="button"
               onClick={onCancel}
-              className="py-2 px-4 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-medium border border-zinc-800 transition-all"
+              className="py-2 px-4 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-medium transition-all"
             >
               Annuler
             </button>

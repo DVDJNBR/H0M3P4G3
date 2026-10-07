@@ -110,7 +110,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="w-full max-w-md glass-panel rounded-2xl p-6 shadow-2xl border border-zinc-800 space-y-4">
+      <div className="w-full max-w-md glass-panel rounded-2xl p-6 shadow-2xl space-y-4">
         <h3 className="text-base font-bold text-zinc-100">{modalTitle}</h3>
 
         {error && (
@@ -129,7 +129,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://example.com"
-              className="w-full px-3.5 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-100 text-sm focus:outline-none focus:border-indigo-500"
+              className="w-full px-3.5 py-2 rounded-lg bg-zinc-800 text-zinc-100 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
               autoFocus
               required
             />
@@ -144,7 +144,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Mon lien"
-              className="w-full px-3.5 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-100 text-sm focus:outline-none focus:border-indigo-500"
+              className="w-full px-3.5 py-2 rounded-lg bg-zinc-800 text-zinc-100 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
           </div>
 
@@ -157,7 +157,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
               value={faviconOverride}
               onChange={(e) => setFaviconOverride(e.target.value)}
               placeholder="https://custom-icon.png"
-              className="w-full px-3.5 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-100 text-sm focus:outline-none focus:border-indigo-500"
+              className="w-full px-3.5 py-2 rounded-lg bg-zinc-800 text-zinc-100 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
           </div>
 
@@ -170,7 +170,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
               value={secondaryUrl}
               onChange={(e) => setSecondaryUrl(e.target.value)}
               placeholder="https://github.com/user/repo"
-              className="w-full px-3.5 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-100 text-sm focus:outline-none focus:border-indigo-500"
+              className="w-full px-3.5 py-2 rounded-lg bg-zinc-800 text-zinc-100 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
             <p className="text-[11px] text-zinc-500 mt-1">
               Affiché comme une seconde icône cliquable, à la suite de la première.
@@ -182,7 +182,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
               type="checkbox"
               checked={showStatusDot}
               onChange={(e) => setShowStatusDot(e.target.checked)}
-              className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-zinc-950"
+              className="w-4 h-4 rounded border-0 bg-zinc-800 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-zinc-950"
             />
             <span className="text-xs font-medium text-zinc-400">
               Afficher un indicateur d'état à la place de l'icône (vert/orange/rouge)
@@ -193,7 +193,7 @@ export const LinkModal: React.FC<LinkModalProps> = ({
             <button
               type="button"
               onClick={onCancel}
-              className="py-2 px-4 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-medium border border-zinc-800 transition-all"
+              className="py-2 px-4 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-medium transition-all"
             >
               Annuler
             </button>
