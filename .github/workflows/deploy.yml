@@ -46,13 +46,12 @@ jobs:
             set -e
             cd /home/ubuntu/H0M3P4G3
             git pull origin main
-            cat > .env <<H0M3P4G3_ENV_MARKER
-            PASSWORD_HASH=$PASSWORD_HASH
-            TOTP_SECRET=$TOTP_SECRET
-            SESSION_SECRET=$SESSION_SECRET
-            RAINDROP_TOKEN=$RAINDROP_TOKEN
-            H0M3P4G3_ENV_MARKER
-            echo "ENV_WRITE_OK bytes=$(wc -c < .env) raindrop_len=$(grep -c '^RAINDROP_TOKEN=.\{10,\}$' .env)"
+            rm -f .env
+            echo "PASSWORD_HASH=$PASSWORD_HASH" >> .env
+            echo "TOTP_SECRET=$TOTP_SECRET" >> .env
+            echo "SESSION_SECRET=$SESSION_SECRET" >> .env
+            echo "RAINDROP_TOKEN=$RAINDROP_TOKEN" >> .env
+            echo "ENV_WRITE_OK bytes=$(wc -c < .env) mtime=$(stat -c %Y .env)"
             docker compose build
             docker compose down
             docker compose up -d
