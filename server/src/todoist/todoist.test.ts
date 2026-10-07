@@ -74,7 +74,8 @@ describe('Todoist Module', () => {
       const res = await app.request('/api/todoist-cache/refresh', { method: 'POST' });
       expect(called).toBe(true);
       expect(res.status).toBe(200);
-      expect((await res.json()).tasks).toEqual([{ id: '2', content: 'new task' }]);
+      const body = (await res.json()) as { tasks: unknown };
+      expect(body.tasks).toEqual([{ id: '2', content: 'new task' }]);
     });
   });
 
