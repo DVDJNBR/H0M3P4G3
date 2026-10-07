@@ -51,7 +51,9 @@ jobs:
             SESSION_SECRET=$SESSION_SECRET
             RAINDROP_TOKEN=$RAINDROP_TOKEN
             H0M3P4G3_ENV_MARKER
-            docker compose up --build -d --force-recreate
+            docker compose build
+            docker compose down
+            docker compose up -d
         env:
           PASSWORD_HASH: ${{ secrets.PASSWORD_HASH }}
           TOTP_SECRET: ${{ secrets.TOTP_SECRET }}
