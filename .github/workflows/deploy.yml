@@ -45,20 +45,21 @@ jobs:
           script: |
             cd /home/ubuntu/H0M3P4G3
             git pull origin main
-            cat > .env <<EOF
+            cat > .env <<H0M3P4G3_ENV_MARKER
             PASSWORD_HASH=$PASSWORD_HASH
             TOTP_SECRET=$TOTP_SECRET
             SESSION_SECRET=$SESSION_SECRET
             RAINDROP_TOKEN=$RAINDROP_TOKEN
-            EOF
+            H0M3P4G3_ENV_MARKER
+            echo "CHECKPOINT-1-env-written"
             docker compose up --build -d --force-recreate
-            echo "--- diagnostic ---"
+            echo "CHECKPOINT-2-compose-up-done"
             docker inspect h0m3p4g3 --format '{{.State.StartedAt}}'
             docker compose exec -T app printenv RAINDROP_TOKEN | cut -c1-8
             docker compose exec -T app node -e 'fetch("https://api.raindrop.io/rest/v1/user",{headers:{Authorization:"Bearer "+process.env.RAINDROP_TOKEN}}).then(r=>console.log("status",r.status))'
             sleep 3
             docker compose logs app --tail 20
-            echo "--- end diagnostic ---"
+            echo "CHECKPOINT-3-end-diagnostic"
         env:
           PASSWORD_HASH: ${{ secrets.PASSWORD_HASH }}
           TOTP_SECRET: ${{ secrets.TOTP_SECRET }}
