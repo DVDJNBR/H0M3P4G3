@@ -198,7 +198,7 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
 
         {block.kind === 'links' && (
           <SortableContext items={linkIds} strategy={rectSortingStrategy}>
-            <div className="flex flex-col divide-y divide-zinc-800/40 min-h-[20px]">
+            <div className="flex flex-col gap-0.5 min-h-[20px]">
               {block.links.length === 0 ? (
                 <p className="text-xs text-zinc-600 italic py-2">
                   {isEditorMode ? 'Cliquez sur + pour ajouter un lien' : 'Aucun lien'}
@@ -211,7 +211,7 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
         )}
 
         {block.kind === 'raindrop' && (
-          <div className="flex flex-col divide-y divide-zinc-800/40">
+          <div className="flex flex-col gap-0.5">
             {raindropItems.length === 0 ? (
               <div className="py-2 text-xs text-zinc-500 italic flex items-center justify-between">
                 <span>Collection indisponible ou vide ({block.collectionId || 'non configurée'})</span>
