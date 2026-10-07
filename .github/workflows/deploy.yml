@@ -52,6 +52,13 @@ jobs:
             RAINDROP_TOKEN=$RAINDROP_TOKEN
             EOF
             docker compose up --build -d --force-recreate
+            echo "--- diagnostic ---"
+            docker inspect h0m3p4g3 --format '{{.State.StartedAt}}'
+            docker compose exec -T app printenv RAINDROP_TOKEN | cut -c1-8
+            docker compose exec -T app node -e 'fetch("https://api.raindrop.io/rest/v1/user",{headers:{Authorization:"Bearer "+process.env.RAINDROP_TOKEN}}).then(r=>console.log("status",r.status))'
+            sleep 3
+            docker compose logs app --tail 20
+            echo "--- end diagnostic ---"
         env:
           PASSWORD_HASH: ${{ secrets.PASSWORD_HASH }}
           TOTP_SECRET: ${{ secrets.TOTP_SECRET }}
