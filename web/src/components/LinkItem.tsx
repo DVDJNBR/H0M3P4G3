@@ -1,16 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { Link, LinkDisplayMode, IconStackDirection } from '../types';
+import type { Link } from '../types';
 import { useLayout } from '../context/LayoutContext';
 import { LinkModal, type LinkModalSavedDetails } from './LinkModal';
 import { fetchLinkStatus, type LinkStatusBucket } from '../api/client';
 
 interface LinkItemProps {
   link: Link;
-  displayMode?: LinkDisplayMode;
-  /** Only meaningful when displayMode is 'iconOnly' -- see StatusDot/SecondaryIcon pairing below. */
-  iconStackDirection?: IconStackDirection;
 }
 
 const STATUS_DOT_COLOR: Record<LinkStatusBucket, string> = {
@@ -25,7 +22,7 @@ const STATUS_DOT_LABEL: Record<LinkStatusBucket, string> = {
   down: 'Hors ligne ou injoignable',
 };
 
-function StatusDot({ url, size }: { url: string; size: 'badge' | 'lg' }) {
+function StatusDot({ url }: { url: string }) {
   const [bucket, setBucket] = useState<LinkStatusBucket | null>(null);
 
   useEffect(() => {
@@ -39,18 +36,17 @@ function StatusDot({ url, size }: { url: string; size: 'badge' | 'lg' }) {
     };
   }, [url]);
 
-  const dim = size === 'lg' ? 'w-3 h-3' : 'w-2 h-2';
   return (
     <span
       title={bucket ? STATUS_DOT_LABEL[bucket] : 'Vérification en cours...'}
-      className={`block rounded-full shrink-0 ring-2 ring-zinc-950 ${dim} ${
+      className={`block rounded-full shrink-0 ring-2 ring-zinc-950 w-2 h-2 ${
         bucket ? STATUS_DOT_COLOR[bucket] : 'bg-zinc-600 animate-pulse'
       }`}
     />
   );
 }
 
-function SecondaryIcon({ url, size }: { url: string; size: 'sm' | 'lg' }) {
+function SecondaryIcon({ url }: { url: string }) {
   const [imgError, setImgError] = useState(false);
   let domain = '';
   try {
@@ -59,8 +55,6 @@ function SecondaryIcon({ url, size }: { url: string; size: 'sm' | 'lg' }) {
     // Ignore URL parse error
   }
   const iconUrl = !imgError && domain ? `/api/favicons/${domain}` : null;
-  const box = size === 'lg' ? 'w-7 h-7' : 'w-4 h-4';
-  const dim = size === 'lg' ? 'w-5 h-5' : 'w-3 h-3';
   // A favicon's own colors are unpredictable -- a dark logo (e.g. GitHub's)
   // would otherwise all but vanish against this app's dark surfaces. The
   // SVG fallback doesn't need it, it already matches the app's icon look.
@@ -72,12 +66,12 @@ function SecondaryIcon({ url, size }: { url: string; size: 'sm' | 'lg' }) {
       target="_blank"
       rel="noopener noreferrer"
       title={url}
-      className={`flex items-center justify-center ${box} shrink-0 rounded ${chipBg} text-zinc-500 hover:text-indigo-400 transition-colors`}
+      className={`flex items-center justify-center w-4 h-4 shrink-0 rounded ${chipBg} text-zinc-500 hover:text-indigo-400 transition-colors`}
     >
       {iconUrl ? (
-        <img src={iconUrl} alt="" className={`${dim} rounded object-contain`} onError={() => setImgError(true)} />
+        <img src={iconUrl} alt="" className="w-3 h-3 rounded object-contain" onError={() => setImgError(true)} />
       ) : (
-        <svg className={dim} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -90,11 +84,7 @@ function SecondaryIcon({ url, size }: { url: string; size: 'sm' | 'lg' }) {
   );
 }
 
-export const LinkItem: React.FC<LinkItemProps> = ({
-  link,
-  displayMode = 'iconAndText',
-  iconStackDirection = 'vertical',
-}) => {
+export const LinkItem: React.FC<LinkItemProps> = ({ link }) => {
   const { isEditorMode, updateLinkDetails, deleteLink } = useLayout();
   const [imgError, setImgError] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -130,21 +120,6 @@ export const LinkItem: React.FC<LinkItemProps> = ({
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth={2}
-        d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-      />
-    </svg>
-  );
-
-  // Icon-only mode has no surrounding tile chrome, so the icon itself
-  // carries the weight -- render it noticeably larger than the icon+text row.
-  const largeIcon = iconUrl ? (
-    <img src={iconUrl} alt="" className="w-8 h-8 rounded object-contain" onError={() => setImgError(true)} />
-  ) : (
-    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={1.5}
         d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
       />
     </svg>
@@ -192,57 +167,6 @@ export const LinkItem: React.FC<LinkItemProps> = ({
     />
   );
 
-  if (displayMode === 'iconOnly') {
-    // The block's own stacking direction decides how *items* flow; the pair
-    // inside one item always runs the other way, so a tall vertical stack
-    // doesn't grow taller still, and a wide row doesn't grow wider still.
-    const pairFlexClass = iconStackDirection === 'horizontal' ? 'flex-col' : 'flex-row';
-
-    return (
-      <>
-        <div
-          ref={setNodeRef}
-          style={style}
-          {...(isEditorMode ? attributes : {})}
-          {...(isEditorMode ? listeners : {})}
-          className={`group relative flex ${pairFlexClass} items-center justify-center gap-1 ${
-            link.secondaryUrl ? 'p-2' : 'w-14 h-14'
-          } shrink-0 rounded-lg text-zinc-300 hover:text-white transition-transform ${
-            link.secondaryUrl ? '' : 'hover:scale-110'
-          } ${isEditorMode ? 'cursor-grab active:cursor-grabbing' : ''} ${
-            isDragging ? 'ring-2 ring-indigo-500/50 z-30 rounded-lg' : ''
-          }`}
-        >
-          <a
-            href={link.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={link.title || link.url}
-            onClick={(e) => isEditorMode && e.preventDefault()}
-            className="relative flex items-center justify-center w-14 h-14 shrink-0"
-          >
-            {largeIcon}
-            {link.showStatusDot && (
-              <span className="absolute bottom-1 right-1">
-                <StatusDot url={link.url} size="lg" />
-              </span>
-            )}
-          </a>
-
-          {link.secondaryUrl && <SecondaryIcon url={link.secondaryUrl} size="lg" />}
-
-          {isEditorMode && (
-            <div className="absolute -top-1.5 -right-1.5 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity bg-zinc-900 rounded-md border border-zinc-800 p-0.5">
-              {editControls}
-            </div>
-          )}
-        </div>
-
-        {editModal}
-      </>
-    );
-  }
-
   return (
     <>
       <div
@@ -276,7 +200,7 @@ export const LinkItem: React.FC<LinkItemProps> = ({
             {icon}
             {link.showStatusDot && (
               <span className="absolute -bottom-0.5 -right-0.5">
-                <StatusDot url={link.url} size="badge" />
+                <StatusDot url={link.url} />
               </span>
             )}
           </div>
@@ -284,7 +208,7 @@ export const LinkItem: React.FC<LinkItemProps> = ({
         </a>
 
         <div className="flex items-center gap-1">
-          {link.secondaryUrl && <SecondaryIcon url={link.secondaryUrl} size="sm" />}
+          {link.secondaryUrl && <SecondaryIcon url={link.secondaryUrl} />}
           {isEditorMode && (
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               {editControls}

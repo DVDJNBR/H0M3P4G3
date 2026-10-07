@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback, useState, useMemo } from 'react';
-import type { Layout, Block, Link, LinkDisplayMode, IconStackDirection } from '../types';
+import type { Layout, Block, Link } from '../types';
 import { fetchLayout, updateLayout, ApiError } from '../api/client';
 import { nanoid } from 'nanoid';
 
@@ -166,8 +166,6 @@ interface ContextValue extends State {
     details: { collectionId: string; displayCap?: number },
   ) => Promise<void>;
   updateHtmlBlockContent: (blockId: string, content: string) => Promise<void>;
-  setLinksBlockDisplayMode: (blockId: string, displayMode: LinkDisplayMode) => Promise<void>;
-  setLinksBlockIconStackDirection: (blockId: string, direction: IconStackDirection) => Promise<void>;
   deleteBlock: (blockId: string) => Promise<void>;
   addLink: (blockId: string, details: LinkDetailsInput) => Promise<void>;
   updateLinkDetails: (linkId: string, details: LinkDetailsInput) => Promise<void>;
@@ -329,38 +327,6 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     [state.layout, saveLayout],
   );
 
-  const setLinksBlockDisplayMode = useCallback(
-    async (blockId: string, displayMode: LinkDisplayMode) => {
-      if (!state.layout) return;
-      const updated: Layout = {
-        columns: state.layout.columns.map((col) => ({
-          ...col,
-          blocks: col.blocks.map((b) =>
-            b.id === blockId && b.kind === 'links' ? { ...b, displayMode } : b,
-          ),
-        })),
-      };
-      await saveLayout(updated);
-    },
-    [state.layout, saveLayout],
-  );
-
-  const setLinksBlockIconStackDirection = useCallback(
-    async (blockId: string, direction: IconStackDirection) => {
-      if (!state.layout) return;
-      const updated: Layout = {
-        columns: state.layout.columns.map((col) => ({
-          ...col,
-          blocks: col.blocks.map((b) =>
-            b.id === blockId && b.kind === 'links' ? { ...b, iconStackDirection: direction } : b,
-          ),
-        })),
-      };
-      await saveLayout(updated);
-    },
-    [state.layout, saveLayout],
-  );
-
   const deleteBlock = useCallback(
     async (blockId: string) => {
       if (!state.layout) return;
@@ -491,8 +457,6 @@ export const LayoutProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         addBlock,
         updateRaindropBlock,
         updateHtmlBlockContent,
-        setLinksBlockDisplayMode,
-        setLinksBlockIconStackDirection,
         deleteBlock,
         addLink,
         updateLinkDetails,

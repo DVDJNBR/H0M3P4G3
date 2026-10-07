@@ -25,21 +25,10 @@ export const linkSchema = z.object({
   showStatusDot: z.boolean().optional(),
 });
 
-// Optional, defaults to 'iconAndText' when absent so existing stored
-// blocks (created before this field existed) keep rendering unchanged.
-export const linkDisplayModeSchema = z.enum(['iconOnly', 'iconAndText']);
-
-// Only meaningful when displayMode is 'iconOnly' -- whether the icons in
-// this block stack in a column (narrow, tall) or a row (wide, short).
-// Defaults to 'vertical' when absent.
-export const iconStackDirectionSchema = z.enum(['vertical', 'horizontal']);
-
 export const linksBlockSchema = z.object({
   kind: z.literal('links'),
   id: z.string().min(1),
   links: z.array(linkSchema),
-  displayMode: linkDisplayModeSchema.optional(),
-  iconStackDirection: iconStackDirectionSchema.optional(),
 });
 
 export const raindropBlockSchema = z.object({
@@ -76,8 +65,6 @@ export const layoutSchema = z.object({
 });
 
 export type Link = z.infer<typeof linkSchema>;
-export type LinkDisplayMode = z.infer<typeof linkDisplayModeSchema>;
-export type IconStackDirection = z.infer<typeof iconStackDirectionSchema>;
 export type LinksBlock = z.infer<typeof linksBlockSchema>;
 export type RaindropBlock = z.infer<typeof raindropBlockSchema>;
 export type HtmlBlock = z.infer<typeof htmlBlockSchema>;
