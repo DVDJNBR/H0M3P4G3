@@ -446,12 +446,8 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
                     >
                       {task.content}
                     </a>
-                    {dateStatus && task.dueDate && (
-                      <span
-                        className={`flex items-center gap-0.5 text-[10px] font-mono shrink-0 ${
-                          dateStatus === 'overdue' ? 'text-zinc-500' : 'text-amber-400'
-                        }`}
-                      >
+                    {dateStatus === 'overdue' && task.dueDate && (
+                      <span className="flex items-center gap-0.5 text-[10px] font-mono shrink-0 text-zinc-500">
                         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <rect x="3" y="5" width="18" height="16" rx="2" strokeWidth={2} />
                           <path strokeLinecap="round" strokeWidth={2} d="M3 10h18M8 3v4M16 3v4" />
