@@ -34,6 +34,7 @@
     --bg-main: #000000;
     --bg-card: rgba(255, 255, 255, 0.045);
     --rim-card: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    --rim-card-hover: inset 0 1px 0 rgba(255, 255, 255, 0.18);
     --text-primary: #f5f5f7;
     --text-muted: #a1a1a6;
     --accent: #0a84ff;
@@ -67,7 +68,48 @@
 
 .glass-panel-hover:hover {
   transform: translateY(-1px);
-  box-shadow: var(--rim-card), var(--shadow-md);
+  box-shadow: var(--rim-card-hover), var(--shadow-md);
+}
+
+/* Dragged block: deeper blur + shadow so it visually lifts off the glass
+   plane. A dedicated class (not a Tailwind backdrop-blur-* utility) since
+   it has to win over .glass-panel's own backdrop-filter reliably. */
+.glass-panel-dragging {
+  backdrop-filter: saturate(180%) blur(28px);
+  -webkit-backdrop-filter: saturate(180%) blur(28px);
+  box-shadow: var(--rim-card-hover), var(--shadow-lg);
+}
+
+/* Cursor-following spotlight (Linear/Raycast-style): --mx/--my are set by
+   a single mousemove listener per block, written straight to the DOM (see
+   BlockView) rather than through React state, so hovering never triggers
+   a re-render. Clips to the element's own border-radius for free since
+   background-image respects it without needing overflow:hidden (which
+   would otherwise clip the block's floating toolbar). */
+.spotlight {
+  --mx: 50%;
+  --my: 50%;
+}
+
+.spotlight:hover {
+  background-image: radial-gradient(
+    circle 220px at var(--mx) var(--my),
+    rgba(255, 255, 255, 0.07),
+    transparent 70%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spotlight:hover {
+    background-image: none;
+  }
+
+  .glass-panel-hover,
+  .glass-panel-hover:hover,
+  * {
+    transition-duration: 0.01ms !important;
+    transform: none !important;
+  }
 }
 
 /* Custom scrollbar */

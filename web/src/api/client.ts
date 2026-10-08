@@ -111,7 +111,7 @@ async function fetchRaindropCacheFromServer(): Promise<RaindropCacheMap> {
 }
 
 export interface TodoistCache {
-  tasks: Array<{ id: string; content: string; dueDate?: string; isRecurring?: boolean }>;
+  tasks: Array<{ id: string; content: string; dueDate?: string; isRecurring?: boolean; priority?: number }>;
   fetchedAt: string | null;
   lastError?: string;
 }

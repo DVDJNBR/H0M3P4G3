@@ -172,7 +172,7 @@ export const LinkItem: React.FC<LinkItemProps> = ({ link }) => {
       <div
         ref={setNodeRef}
         style={style}
-        className={`group flex items-center justify-between px-1.5 py-1.5 rounded-md hover:bg-white/5 transition-colors text-sm text-zinc-200 hover:text-white ${
+        className={`group flex items-center justify-between px-1.5 py-1.5 rounded-md hover:bg-white/5 active:scale-[0.98] transition-[background-color,color,transform] duration-150 text-sm text-zinc-200 hover:text-white ${
           isDragging ? 'ring-2 ring-indigo-500/50 z-30 bg-zinc-800/60' : ''
         }`}
       >

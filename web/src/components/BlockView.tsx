@@ -28,15 +28,26 @@ function longestLinkLabelLength(block: Block): number {
   return block.links.reduce((max, l) => Math.max(max, (l.title || l.url).length), 0);
 }
 
-// Matches Todoist's own color convention for a due date: red once it's
-// past, amber on the day itself. No color otherwise -- the active-tasks
-// filter already excludes anything further out.
 function todoistDateStatus(dueDate?: string): 'overdue' | 'today' | null {
   if (!dueDate) return null;
   const today = new Date().toISOString().slice(0, 10);
   if (dueDate < today) return 'overdue';
   if (dueDate === today) return 'today';
   return null;
+  // Overdue renders gray, not Todoist's own red -- less alarming for a
+  // homepage glanced at constantly. Amber for due-today only.
+}
+
+// Todoist API priority: 4 = P1 (red), 3 = P2 (orange), 2 = P3 (blue),
+// 1/absent = P4 (default border, no priority).
+const PRIORITY_RING_CLASS: Record<number, string> = {
+  4: 'border-red-500 hover:bg-red-500/20',
+  3: 'border-orange-400 hover:bg-orange-400/20',
+  2: 'border-blue-400 hover:bg-blue-400/20',
+};
+
+function todoistPriorityRingClass(priority?: number): string {
+  return (priority && PRIORITY_RING_CLASS[priority]) || 'border-zinc-600 hover:border-indigo-400 hover:bg-indigo-500/20';
 }
 
 const FRENCH_SHORT_MONTHS = [
@@ -49,6 +60,24 @@ const FRENCH_SHORT_MONTHS = [
 function formatTodoistDate(dueDate: string): string {
   const [, month, day] = dueDate.split('-').map(Number);
   return `${day} ${FRENCH_SHORT_MONTHS[month - 1]}`;
+}
+
+// Shown while a Raindrop/Todoist block's first fetch is still in flight --
+// reads as "this is finishing up" rather than a blank-then-pop flash.
+function SkeletonRows({ count }: { count: number }) {
+  return (
+    <>
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="flex items-center gap-2.5 px-1.5 py-1.5">
+          <div className="w-3.5 h-3.5 rounded-full bg-white/5 animate-pulse shrink-0" />
+          <div
+            className="h-3 rounded bg-white/5 animate-pulse"
+            style={{ width: `${55 + ((i * 17) % 35)}%` }}
+          />
+        </div>
+      ))}
+    </>
+  );
 }
 
 interface BlockViewProps {
@@ -68,7 +97,9 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
   const [showEditRaindropModal, setShowEditRaindropModal] = useState(false);
   const [showEditHtmlModal, setShowEditHtmlModal] = useState(false);
   const [raindropData, setRaindropData] = useState<RaindropCacheMap[string] | null>(null);
+  const [raindropLoaded, setRaindropLoaded] = useState(false);
   const [todoistData, setTodoistData] = useState<TodoistCache | null>(null);
+  const [todoistLoaded, setTodoistLoaded] = useState(false);
   const [showAddTodoistTask, setShowAddTodoistTask] = useState(false);
   const [newTodoistContent, setNewTodoistContent] = useState('');
   const toolbarRef = useRef<HTMLDivElement>(null);
@@ -106,17 +137,27 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
   useEffect(() => {
     if (block.kind === 'raindrop') {
       fetchRaindropCache().then((cache) => {
-        if (cache[block.collectionId]) {
-          setRaindropData(cache[block.collectionId] || null);
-        } else {
-          setRaindropData(null);
-        }
+        setRaindropData(cache[block.collectionId] || null);
+        setRaindropLoaded(true);
       });
     }
     if (block.kind === 'todoist') {
-      fetchTodoistCache().then(setTodoistData);
+      fetchTodoistCache().then((cache) => {
+        setTodoistData(cache);
+        setTodoistLoaded(true);
+      });
     }
   }, [block]);
+
+  // Cursor-following spotlight: writes straight to the DOM via a CSS
+  // custom property instead of React state, so hovering a block never
+  // triggers a re-render -- the gradient itself is pure CSS (see .spotlight
+  // in index.css), this just keeps it centered on the cursor.
+  const handleSpotlightMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    e.currentTarget.style.setProperty('--mx', `${e.clientX - rect.left}px`);
+    e.currentTarget.style.setProperty('--my', `${e.clientY - rect.top}px`);
+  };
 
   const handleDeleteRequest = () => {
     if (block.kind === 'links' && block.links.length > 0) {
@@ -182,8 +223,9 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
         ref={setNodeRef}
         style={style}
         onMouseEnter={handleMouseEnter}
-        className={`glass-panel glass-panel-hover rounded-xl p-4 flex flex-col gap-3 group relative ${
-          isDragging ? 'ring-2 ring-indigo-500/50 z-30' : ''
+        onMouseMove={handleSpotlightMove}
+        className={`glass-panel glass-panel-hover spotlight rounded-xl p-4 flex flex-col gap-3 group relative ${
+          isDragging ? 'glass-panel-dragging ring-2 ring-indigo-500/50 z-30' : ''
         }`}
       >
         {isEditorMode && (
@@ -306,7 +348,9 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
 
         {block.kind === 'raindrop' && (
           <div className="flex flex-col gap-0.5">
-            {raindropItems.length === 0 ? (
+            {!raindropLoaded ? (
+              <SkeletonRows count={3} />
+            ) : raindropItems.length === 0 ? (
               <div className="py-2 text-xs text-zinc-500 italic flex items-center justify-between">
                 <span>Collection indisponible ou vide ({block.collectionId || 'non configurée'})</span>
                 <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-900/40 text-indigo-400 font-mono shrink-0 ml-2">
@@ -320,7 +364,7 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
                   href={item.link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2.5 px-1.5 py-1.5 rounded-md hover:bg-white/5 transition-colors text-xs text-zinc-300 hover:text-white"
+                  className="flex items-center gap-2.5 px-1.5 py-1.5 rounded-md hover:bg-white/5 active:scale-[0.98] transition-[background-color,color,transform] duration-150 text-xs text-zinc-300 hover:text-white"
                 >
                   {item.cover && (
                     <img
@@ -372,7 +416,9 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
               </form>
             )}
 
-            {(todoistData?.tasks?.length ?? 0) === 0 && !showAddTodoistTask ? (
+            {!todoistLoaded ? (
+              <SkeletonRows count={4} />
+            ) : (todoistData?.tasks?.length ?? 0) === 0 && !showAddTodoistTask ? (
               <div className="py-2 text-xs text-zinc-500 italic flex items-center justify-between">
                 <span>{todoistData?.lastError ? `Indisponible (${todoistData.lastError})` : 'Aucune tâche active'}</span>
                 <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-900/40 text-indigo-400 font-mono shrink-0 ml-2">
@@ -390,20 +436,20 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
                     <button
                       onClick={() => handleCompleteTodoistTask(task.id)}
                       title="Marquer comme terminé"
-                      className="w-3.5 h-3.5 rounded-full border border-zinc-600 shrink-0 hover:border-indigo-400 hover:bg-indigo-500/20 transition-colors"
+                      className={`w-3.5 h-3.5 rounded-full border shrink-0 active:scale-90 transition-[border-color,background-color,transform] duration-150 ${todoistPriorityRingClass(task.priority)}`}
                     />
                     <a
                       href={`https://app.todoist.com/app/task/${task.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="truncate flex-1 min-w-0 hover:text-white"
+                      className="truncate flex-1 min-w-0 hover:text-white active:opacity-70 transition-opacity"
                     >
                       {task.content}
                     </a>
                     {dateStatus && task.dueDate && (
                       <span
                         className={`flex items-center gap-0.5 text-[10px] font-mono shrink-0 ${
-                          dateStatus === 'overdue' ? 'text-red-400' : 'text-amber-400'
+                          dateStatus === 'overdue' ? 'text-zinc-500' : 'text-amber-400'
                         }`}
                       >
                         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">

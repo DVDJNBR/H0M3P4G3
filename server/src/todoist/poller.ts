@@ -4,6 +4,7 @@ interface TodoistApiTask {
   id: string;
   content: string;
   due?: { date: string; is_recurring: boolean } | null;
+  priority?: number;
 }
 
 type TodoistApiResponse = TodoistApiTask[] | { results: TodoistApiTask[] };
@@ -46,6 +47,7 @@ export async function fetchActiveTasks(
         content: t.content,
         dueDate: t.due?.date,
         isRecurring: t.due?.is_recurring || undefined,
+        priority: t.priority,
       })),
     };
   } catch (err) {

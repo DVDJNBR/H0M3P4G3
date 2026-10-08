@@ -9,6 +9,9 @@ export interface TodoistTask {
   // (red = overdue, amber = due today).
   dueDate?: string;
   isRecurring?: boolean;
+  // Todoist API convention: 4 = P1 (urgent/red), 3 = P2 (orange),
+  // 2 = P3 (blue), 1 = P4 (no priority/default). Absent means 1.
+  priority?: number;
 }
 
 export interface TodoistCache {
