@@ -8,6 +8,7 @@ export interface TodoistTask {
   // client-side against "today" to color it the way Todoist itself does
   // (red = overdue, amber = due today).
   dueDate?: string;
+  isRecurring?: boolean;
 }
 
 export interface TodoistCache {

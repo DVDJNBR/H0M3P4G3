@@ -29,14 +29,26 @@ function longestLinkLabelLength(block: Block): number {
 }
 
 // Matches Todoist's own color convention for a due date: red once it's
-// past, amber on the day itself. No color (and no label) otherwise --
-// the active-tasks filter already excludes anything further out.
+// past, amber on the day itself. No color otherwise -- the active-tasks
+// filter already excludes anything further out.
 function todoistDateStatus(dueDate?: string): 'overdue' | 'today' | null {
   if (!dueDate) return null;
   const today = new Date().toISOString().slice(0, 10);
   if (dueDate < today) return 'overdue';
   if (dueDate === today) return 'today';
   return null;
+}
+
+const FRENCH_SHORT_MONTHS = [
+  'janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin',
+  'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.',
+];
+
+// Matches the Todoist app's own date format ("26 sept."), not a relative
+// label -- see how the real app renders it on an overdue task.
+function formatTodoistDate(dueDate: string): string {
+  const [, month, day] = dueDate.split('-').map(Number);
+  return `${day} ${FRENCH_SHORT_MONTHS[month - 1]}`;
 }
 
 interface BlockViewProps {
@@ -388,13 +400,27 @@ export const BlockView: React.FC<BlockViewProps> = ({ block }) => {
                     >
                       {task.content}
                     </a>
-                    {dateStatus && (
+                    {dateStatus && task.dueDate && (
                       <span
-                        className={`text-[10px] font-mono shrink-0 ${
+                        className={`flex items-center gap-0.5 text-[10px] font-mono shrink-0 ${
                           dateStatus === 'overdue' ? 'text-red-400' : 'text-amber-400'
                         }`}
                       >
-                        {dateStatus === 'overdue' ? 'En retard' : "Aujourd'hui"}
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <rect x="3" y="5" width="18" height="16" rx="2" strokeWidth={2} />
+                          <path strokeLinecap="round" strokeWidth={2} d="M3 10h18M8 3v4M16 3v4" />
+                        </svg>
+                        {formatTodoistDate(task.dueDate)}
+                        {task.isRecurring && (
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M4 4v5h5M20 20v-5h-5M4 9a8 8 0 0114-4.9M20 15a8 8 0 01-14 4.9"
+                            />
+                          </svg>
+                        )}
                       </span>
                     )}
                     {isEditorMode && (
